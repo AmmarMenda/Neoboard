@@ -6,9 +6,10 @@ import '../widgets/retro_header.dart';
 import '../widgets/retro_button.dart' as retro;
 import '../database/database_helper.dart';
 import '../models/thread.dart';
+import '../widgets/imageboard_text.dart';
+import '../utils/responsive_helper.dart';
 import 'create_thread_screen.dart';
 import 'thread_screen.dart';
-import '../widgets/imageboard_text.dart';
 
 class BoardScreen extends StatefulWidget {
   final String boardName;
@@ -63,7 +64,7 @@ class _BoardScreenState extends State<BoardScreen> {
         );
 
         await _dbHelper.insertThread(newThread);
-        await _loadBoardThreads(); // Reload threads
+        await _loadBoardThreads();
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -106,8 +107,9 @@ class _BoardScreenState extends State<BoardScreen> {
       ),
       body: Column(
         children: [
+          // Create Thread Button Section
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: ResponsiveHelper.getResponsivePadding(context),
             child: Row(
               children: [
                 Expanded(
@@ -116,11 +118,16 @@ class _BoardScreenState extends State<BoardScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.add, size: 18),
-                        const SizedBox(width: 8),
+                        Icon(
+                          Icons.add, 
+                          size: ResponsiveHelper.isSmallScreen(context) ? 16 : 18,
+                        ),
+                        SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 8)),
                         Text(
                           'Create New Thread',
-                          style: GoogleFonts.vt323(fontSize: 16),
+                          style: GoogleFonts.vt323(
+                            fontSize: ResponsiveHelper.getResponsiveFontSize(context, 16),
+                          ),
                         ),
                       ],
                     ),
@@ -129,9 +136,10 @@ class _BoardScreenState extends State<BoardScreen> {
               ],
             ),
           ),
+          // Board Info
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: ResponsiveHelper.getResponsivePadding(context),
             decoration: const BoxDecoration(
               color: Color(0xFFE0E0E0),
               border: Border(
@@ -139,11 +147,18 @@ class _BoardScreenState extends State<BoardScreen> {
                 bottom: BorderSide(color: Colors.black, width: 1),
               ),
             ),
-            child: Text(
-              'Board ${widget.boardName} - ${_boardThreads.length} threads',
-              style: GoogleFonts.vt323(fontSize: 16, color: Colors.black),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Text(
+                'Board ${widget.boardName} - ${_boardThreads.length} threads',
+                style: GoogleFonts.vt323(
+                  fontSize: ResponsiveHelper.getResponsiveFontSize(context, 16), 
+                  color: Colors.black,
+                ),
+              ),
             ),
           ),
+          // Threads List
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -154,21 +169,26 @@ class _BoardScreenState extends State<BoardScreen> {
                           children: [
                             Text(
                               'No threads yet',
-                              style: GoogleFonts.vt323(fontSize: 24, color: Colors.black54),
+                              style: GoogleFonts.vt323(
+                                fontSize: ResponsiveHelper.getResponsiveFontSize(context, 24), 
+                                color: Colors.black54,
+                              ),
                             ),
-                            const SizedBox(height: 16),
+                            SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 16)),
                             retro.RetroButton(
                               onTap: _createNewThread,
                               child: Text(
                                 'Create First Thread',
-                                style: GoogleFonts.vt323(fontSize: 16),
+                                style: GoogleFonts.vt323(
+                                  fontSize: ResponsiveHelper.getResponsiveFontSize(context, 16),
+                                ),
                               ),
                             ),
                           ],
                         ),
                       )
                     : ListView.builder(
-                        padding: const EdgeInsets.all(16),
+                        padding: ResponsiveHelper.getResponsivePadding(context),
                         itemCount: _boardThreads.length,
                         itemBuilder: (context, index) {
                           final thread = _boardThreads[index];
@@ -207,7 +227,7 @@ class _ThreadListItem extends StatelessWidget {
     const chrome = Color(0xFFE0E0E0);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: ResponsiveHelper.getResponsiveSpacing(context, 12)),
       decoration: BoxDecoration(
         color: chrome,
         border: Border.all(color: Colors.black, width: 1),
@@ -215,70 +235,151 @@ class _ThreadListItem extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (thread.imagePath != null)
-                Container(
-                  width: 60,
-                  height: 60,
-                  margin: const EdgeInsets.only(right: 12),
-                  child: Image.file(
-                    File(thread.imagePath!),
-                    fit: BoxFit.cover,
-                  ),
-                )
-              else
-                Container(
-                  width: 60,
-                  height: 60,
-                  margin: const EdgeInsets.only(right: 12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF9EC1C1),
-                    border: Border.all(color: Colors.black, width: 1),
-                  ),
-                  child: Center(
-                    child: Text(
-                      'IMG',
-                      style: GoogleFonts.vt323(fontSize: 12, color: Colors.black54),
-                    ),
-                  ),
-                ),
-              Expanded(
-                child: Column(
+          padding: ResponsiveHelper.getResponsivePadding(context),
+          child: ResponsiveHelper.isSmallScreen(context)
+              ? Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      thread.title,
-                      style: GoogleFonts.vt323(fontSize: 18, color: Colors.black),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    ImageboardText(
-  text: thread.content,
-  fontSize: 14,
-  defaultColor: Colors.black87,
-),
-
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: silver,
-                        border: Border.all(color: Colors.black, width: 1),
+                    // Image on top for small screens
+                    if (thread.imagePath != null)
+                      Container(
+                        width: double.infinity,
+                        height: 120,
+                        margin: EdgeInsets.only(
+                          bottom: ResponsiveHelper.getResponsiveSpacing(context, 12),
+                        ),
+                        child: Image.file(
+                          File(thread.imagePath!),
+                          fit: BoxFit.contain,
+                        ),
+                      )
+                    else
+                      Container(
+                        width: double.infinity,
+                        height: 80,
+                        margin: EdgeInsets.only(
+                          bottom: ResponsiveHelper.getResponsiveSpacing(context, 12),
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF9EC1C1),
+                          border: Border.all(color: Colors.black, width: 1),
+                        ),
+                        child: Center(
+                          child: Text(
+                            'NO IMG',
+                            style: GoogleFonts.vt323(
+                              fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12), 
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ),
                       ),
-                      child: Text(
-                        '${thread.replies} replies',
-                        style: GoogleFonts.vt323(fontSize: 12, color: Colors.black),
+                    // Thread info below
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          thread.title,
+                          style: GoogleFonts.vt323(
+                            fontSize: ResponsiveHelper.getResponsiveFontSize(context, 18), 
+                            color: Colors.black,
+                          ),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 4)),
+                        Container(
+                          constraints: const BoxConstraints(maxHeight: 60),
+                          child: ImageboardText(
+                            text: thread.content,
+                            fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14),
+                            defaultColor: Colors.black87,
+                          ),
+                        ),
+                        SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 8)),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: silver,
+                            border: Border.all(color: Colors.black, width: 1),
+                          ),
+                          child: Text(
+                            '${thread.replies} replies',
+                            style: GoogleFonts.vt323(
+                              fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12), 
+                              color: Colors.black,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                )
+              : Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (thread.imagePath != null)
+                      Container(
+                        width: 60,
+                        height: 60,
+                        margin: const EdgeInsets.only(right: 12),
+                        child: Image.file(
+                          File(thread.imagePath!),
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                    else
+                      Container(
+                        width: 60,
+                        height: 60,
+                        margin: const EdgeInsets.only(right: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF9EC1C1),
+                          border: Border.all(color: Colors.black, width: 1),
+                        ),
+                        child: Center(
+                          child: Text(
+                            'IMG',
+                            style: GoogleFonts.vt323(fontSize: 12, color: Colors.black54),
+                          ),
+                        ),
+                      ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            thread.title,
+                            style: GoogleFonts.vt323(fontSize: 18, color: Colors.black),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            constraints: const BoxConstraints(maxHeight: 40),
+                            child: ImageboardText(
+                              text: thread.content,
+                              fontSize: 14,
+                              defaultColor: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: silver,
+                              border: Border.all(color: Colors.black, width: 1),
+                            ),
+                            child: Text(
+                              '${thread.replies} replies',
+                              style: GoogleFonts.vt323(fontSize: 12, color: Colors.black),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
         ),
       ),
     );

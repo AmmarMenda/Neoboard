@@ -7,6 +7,7 @@ import '../database/database_helper.dart';
 import '../models/thread.dart';
 import '../models/post.dart';
 import '../widgets/imageboard_text.dart';
+import '../utils/responsive_helper.dart';
 import 'moderator_thread_view_screen.dart';
 
 class ModeratorThreadManagementScreen extends StatefulWidget {
@@ -19,7 +20,7 @@ class ModeratorThreadManagementScreen extends StatefulWidget {
 class _ModeratorThreadManagementScreenState extends State<ModeratorThreadManagementScreen> {
   final DatabaseHelper _dbHelper = DatabaseHelper();
   List<Thread> _threads = [];
-  Map<int, List<Post>> _threadReplies = {}; // Store replies for each thread
+  Map<int, List<Post>> _threadReplies = {};
   bool _isLoading = true;
   String _selectedBoard = 'All';
   final List<String> _boards = ['All', '/b/', '/g/', '/v/', '/a/'];
@@ -43,7 +44,6 @@ class _ModeratorThreadManagementScreenState extends State<ModeratorThreadManagem
         threads = await _dbHelper.getThreadsByBoard(_selectedBoard);
       }
       
-      // Load replies for each thread
       Map<int, List<Post>> repliesMap = {};
       for (Thread thread in threads) {
         final replies = await _dbHelper.getPostsByThread(thread.id!);
@@ -100,7 +100,6 @@ class _ModeratorThreadManagementScreenState extends State<ModeratorThreadManagem
         builder: (_) => ModeratorThreadViewScreen(threadId: thread.id!),
       ),
     ).then((_) {
-      // Reload threads when returning from thread view (in case replies were deleted)
       _loadThreads();
     });
   }
@@ -111,7 +110,9 @@ class _ModeratorThreadManagementScreenState extends State<ModeratorThreadManagem
       appBar: AppBar(
         title: Text(
           'Thread Management',
-          style: GoogleFonts.vt323(fontSize: 20),
+          style: GoogleFonts.vt323(
+            fontSize: ResponsiveHelper.getResponsiveFontSize(context, 20),
+          ),
         ),
         backgroundColor: const Color(0xFFC0C0C0),
         elevation: 0,
@@ -124,7 +125,7 @@ class _ModeratorThreadManagementScreenState extends State<ModeratorThreadManagem
           children: [
             // Header and Controls
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: ResponsiveHelper.getResponsivePadding(context),
               decoration: const BoxDecoration(
                 color: Color(0xFFC0C0C0),
                 border: Border(
@@ -134,68 +135,136 @@ class _ModeratorThreadManagementScreenState extends State<ModeratorThreadManagem
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Icon(Icons.manage_accounts, color: Colors.black),
-                      const SizedBox(width: 8),
-                      Text(
-                        'THREAD & REPLY MANAGEMENT',
-                        style: GoogleFonts.vt323(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Text(
-                        'Filter by Board:',
-                        style: GoogleFonts.vt323(fontSize: 14),
-                      ),
-                      const SizedBox(width: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border.all(color: Colors.black, width: 1),
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: _selectedBoard,
-                            style: GoogleFonts.vt323(fontSize: 14, color: Colors.black),
-                            items: _boards.map((String board) {
-                              return DropdownMenuItem<String>(
-                                value: board,
-                                child: Text(board),
-                              );
-                            }).toList(),
-                            onChanged: (String? newValue) {
-                              if (newValue != null) {
-                                setState(() {
-                                  _selectedBoard = newValue;
-                                });
-                                _loadThreads();
-                              }
-                            },
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        Icon(Icons.manage_accounts, color: Colors.black),
+                        SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 8)),
+                        Text(
+                          'THREAD & REPLY MANAGEMENT',
+                          style: GoogleFonts.vt323(
+                            fontSize: ResponsiveHelper.getResponsiveFontSize(context, 20),
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                      ),
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFDDDD),
-                          border: Border.all(color: Colors.black, width: 1),
-                        ),
-                        child: Text(
-                          '${_threads.length} threads',
-                          style: GoogleFonts.vt323(fontSize: 14),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
+                  SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 12)),
+                  // Responsive filter section
+                  ResponsiveHelper.isSmallScreen(context)
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Filter by Board:',
+                              style: GoogleFonts.vt323(
+                                fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14),
+                              ),
+                            ),
+                            SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 8)),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      border: Border.all(color: Colors.black, width: 1),
+                                    ),
+                                    child: DropdownButtonHideUnderline(
+                                      child: DropdownButton<String>(
+                                        value: _selectedBoard,
+                                        isExpanded: true,
+                                        style: GoogleFonts.vt323(
+                                          fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14), 
+                                          color: Colors.black,
+                                        ),
+                                        items: _boards.map((String board) {
+                                          return DropdownMenuItem<String>(
+                                            value: board,
+                                            child: Text(board),
+                                          );
+                                        }).toList(),
+                                        onChanged: (String? newValue) {
+                                          if (newValue != null) {
+                                            setState(() {
+                                              _selectedBoard = newValue;
+                                            });
+                                            _loadThreads();
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 12)),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFFDDDD),
+                                    border: Border.all(color: Colors.black, width: 1),
+                                  ),
+                                  child: Text(
+                                    '${_threads.length}',
+                                    style: GoogleFonts.vt323(
+                                      fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        )
+                      : Row(
+                          children: [
+                            Text(
+                              'Filter by Board:',
+                              style: GoogleFonts.vt323(fontSize: 14),
+                            ),
+                            const SizedBox(width: 12),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                border: Border.all(color: Colors.black, width: 1),
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: _selectedBoard,
+                                  style: GoogleFonts.vt323(fontSize: 14, color: Colors.black),
+                                  items: _boards.map((String board) {
+                                    return DropdownMenuItem<String>(
+                                      value: board,
+                                      child: Text(board),
+                                    );
+                                  }).toList(),
+                                  onChanged: (String? newValue) {
+                                    if (newValue != null) {
+                                      setState(() {
+                                        _selectedBoard = newValue;
+                                      });
+                                      _loadThreads();
+                                    }
+                                  },
+                                ),
+                              ),
+                            ),
+                            const Spacer(),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFDDDD),
+                                border: Border.all(color: Colors.black, width: 1),
+                              ),
+                              child: Text(
+                                '${_threads.length} threads',
+                                style: GoogleFonts.vt323(fontSize: 14),
+                              ),
+                            ),
+                          ],
+                        ),
                 ],
               ),
             ),
@@ -207,11 +276,14 @@ class _ModeratorThreadManagementScreenState extends State<ModeratorThreadManagem
                       ? Center(
                           child: Text(
                             'No threads found',
-                            style: GoogleFonts.vt323(fontSize: 18, color: Colors.black54),
+                            style: GoogleFonts.vt323(
+                              fontSize: ResponsiveHelper.getResponsiveFontSize(context, 18), 
+                              color: Colors.black54,
+                            ),
                           ),
                         )
                       : ListView.builder(
-                          padding: const EdgeInsets.all(8),
+                          padding: ResponsiveHelper.getResponsivePadding(context),
                           itemCount: _threads.length,
                           itemBuilder: (context, index) {
                             final thread = _threads[index];
@@ -259,7 +331,7 @@ class _ModeratorThreadCardState extends State<_ModeratorThreadCard> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: ResponsiveHelper.getResponsiveSpacing(context, 12)),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: Colors.black, width: 1),
@@ -267,100 +339,128 @@ class _ModeratorThreadCardState extends State<_ModeratorThreadCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Thread Header
+          // Thread Header - Responsive Layout
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: ResponsiveHelper.getResponsivePadding(context),
             decoration: const BoxDecoration(
               color: Color(0xFFF0F0F0),
               border: Border(bottom: BorderSide(color: Colors.black, width: 1)),
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFC0C0C0),
-                    border: Border.all(color: Colors.black, width: 1),
-                  ),
-                  child: Text(
-                    widget.thread.board,
-                    style: GoogleFonts.vt323(fontSize: 12),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFDDDD),
-                    border: Border.all(color: Colors.black, width: 1),
-                  ),
-                  child: Text(
-                    widget.thread.formattedId,
-                    style: GoogleFonts.vt323(fontSize: 12, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  '${widget.replies.length} replies',
-                  style: GoogleFonts.vt323(fontSize: 12, color: Colors.black54),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  _formatDate(widget.thread.createdAt),
-                  style: GoogleFonts.vt323(fontSize: 12, color: Colors.black54),
-                ),
-                const Spacer(),
-                // Toggle replies button
-                if (widget.replies.isNotEmpty)
-                  retro.RetroButton(
-                    onTap: () {
-                      setState(() {
-                        _showReplies = !_showReplies;
-                      });
-                    },
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          _showReplies ? Icons.expand_less : Icons.expand_more,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          _showReplies ? 'HIDE' : 'SHOW',
-                          style: GoogleFonts.vt323(fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  ),
-                const SizedBox(width: 8),
-                // Open thread button
-                retro.RetroButton(
-                  onTap: widget.onOpen,
+                // First row - basic info
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
                   child: Row(
-                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.open_in_new, size: 16, color: Colors.blue),
-                      const SizedBox(width: 4),
-                      Text(
-                        'OPEN',
-                        style: GoogleFonts.vt323(fontSize: 12, color: Colors.blue),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFC0C0C0),
+                          border: Border.all(color: Colors.black, width: 1),
+                        ),
+                        child: Text(
+                          widget.thread.board,
+                          style: GoogleFonts.vt323(
+                            fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFDDDD),
+                          border: Border.all(color: Colors.black, width: 1),
+                        ),
+                        child: Text(
+                          widget.thread.formattedId,
+                          style: GoogleFonts.vt323(
+                            fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12), 
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          '${widget.replies.length} replies • ${_formatDate(widget.thread.createdAt)}',
+                          style: GoogleFonts.vt323(
+                            fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12), 
+                            color: Colors.black54,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
-                // Delete thread button
-                retro.RetroButton(
-                  onTap: widget.onDelete,
+                SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 8)),
+                // Second row - Action buttons (responsive)
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
                   child: Row(
-                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.delete, size: 16, color: Colors.red),
-                      const SizedBox(width: 4),
-                      Text(
-                        'DELETE',
-                        style: GoogleFonts.vt323(fontSize: 12, color: Colors.red),
+                      if (widget.replies.isNotEmpty)
+                        retro.RetroButton(
+                          onTap: () {
+                            setState(() {
+                              _showReplies = !_showReplies;
+                            });
+                          },
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                _showReplies ? Icons.expand_less : Icons.expand_more,
+                                size: 14,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                _showReplies ? 'HIDE' : 'SHOW',
+                                style: GoogleFonts.vt323(
+                                  fontSize: ResponsiveHelper.getResponsiveFontSize(context, 10),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 8)),
+                      retro.RetroButton(
+                        onTap: widget.onOpen,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.open_in_new, size: 14, color: Colors.blue),
+                            const SizedBox(width: 4),
+                            Text(
+                              'OPEN',
+                              style: GoogleFonts.vt323(
+                                fontSize: ResponsiveHelper.getResponsiveFontSize(context, 10), 
+                                color: Colors.blue,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 8)),
+                      retro.RetroButton(
+                        onTap: widget.onDelete,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.delete, size: 14, color: Colors.red),
+                            const SizedBox(width: 4),
+                            Text(
+                              'DELETE',
+                              style: GoogleFonts.vt323(
+                                fontSize: ResponsiveHelper.getResponsiveFontSize(context, 10), 
+                                color: Colors.red,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -370,62 +470,126 @@ class _ModeratorThreadCardState extends State<_ModeratorThreadCard> {
           ),
           // Thread Content
           Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Thread Image
-                if (widget.thread.imagePath != null)
-                  Container(
-                    width: 80,
-                    height: 80,
-                    margin: const EdgeInsets.only(right: 12),
-                    child: Image.file(
-                      File(widget.thread.imagePath!),
-                      fit: BoxFit.cover,
-                    ),
-                  )
-                else
-                  Container(
-                    width: 80,
-                    height: 80,
-                    margin: const EdgeInsets.only(right: 12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF9EC1C1),
-                      border: Border.all(color: Colors.black, width: 1),
-                    ),
-                    child: Center(
-                      child: Text(
-                        'NO IMG',
-                        style: GoogleFonts.vt323(fontSize: 10, color: Colors.black54),
-                      ),
-                    ),
-                  ),
-                // Thread Details
-                Expanded(
-                  child: Column(
+            padding: ResponsiveHelper.getResponsivePadding(context),
+            child: ResponsiveHelper.isSmallScreen(context)
+                ? Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        widget.thread.title,
-                        style: GoogleFonts.vt323(fontSize: 16, fontWeight: FontWeight.bold),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                      // Image on top for small screens
+                      if (widget.thread.imagePath != null)
+                        Container(
+                          width: double.infinity,
+                          height: 120,
+                          margin: EdgeInsets.only(
+                            bottom: ResponsiveHelper.getResponsiveSpacing(context, 12),
+                          ),
+                          child: Image.file(
+                            File(widget.thread.imagePath!),
+                            fit: BoxFit.contain,
+                          ),
+                        )
+                      else
+                        Container(
+                          width: double.infinity,
+                          height: 80,
+                          margin: EdgeInsets.only(
+                            bottom: ResponsiveHelper.getResponsiveSpacing(context, 12),
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF9EC1C1),
+                            border: Border.all(color: Colors.black, width: 1),
+                          ),
+                          child: Center(
+                            child: Text(
+                              'NO IMG',
+                              style: GoogleFonts.vt323(
+                                fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12), 
+                                color: Colors.black54,
+                              ),
+                            ),
+                          ),
+                        ),
+                      // Thread details below
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.thread.title,
+                            style: GoogleFonts.vt323(
+                              fontSize: ResponsiveHelper.getResponsiveFontSize(context, 16), 
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 4)),
+                          Container(
+                            constraints: const BoxConstraints(maxHeight: 80),
+                            child: ImageboardText(
+                              text: widget.thread.content,
+                              fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14),
+                              defaultColor: Colors.black87,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 4),
-                      Container(
-                        constraints: const BoxConstraints(maxHeight: 60),
-                        child: ImageboardText(
-                          text: widget.thread.content,
-                          fontSize: 14,
-                          defaultColor: Colors.black87,
+                    ],
+                  )
+                : Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Thread Image
+                      if (widget.thread.imagePath != null)
+                        Container(
+                          width: 80,
+                          height: 80,
+                          margin: const EdgeInsets.only(right: 12),
+                          child: Image.file(
+                            File(widget.thread.imagePath!),
+                            fit: BoxFit.cover,
+                          ),
+                        )
+                      else
+                        Container(
+                          width: 80,
+                          height: 80,
+                          margin: const EdgeInsets.only(right: 12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF9EC1C1),
+                            border: Border.all(color: Colors.black, width: 1),
+                          ),
+                          child: Center(
+                            child: Text(
+                              'NO IMG',
+                              style: GoogleFonts.vt323(fontSize: 10, color: Colors.black54),
+                            ),
+                          ),
+                        ),
+                      // Thread Details
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.thread.title,
+                              style: GoogleFonts.vt323(fontSize: 16, fontWeight: FontWeight.bold),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            Container(
+                              constraints: const BoxConstraints(maxHeight: 60),
+                              child: ImageboardText(
+                                text: widget.thread.content,
+                                fontSize: 14,
+                                defaultColor: Colors.black87,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                ),
-              ],
-            ),
           ),
           // Replies Section (collapsible)
           if (_showReplies && widget.replies.isNotEmpty)
@@ -438,23 +602,29 @@ class _ModeratorThreadCardState extends State<_ModeratorThreadCard> {
                 children: [
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(8),
+                    padding: ResponsiveHelper.getResponsivePadding(context),
                     decoration: const BoxDecoration(
                       color: Color(0xFFE8E8E8),
                       border: Border(bottom: BorderSide(color: Colors.black54, width: 1)),
                     ),
                     child: Text(
                       'REPLIES (${widget.replies.length})',
-                      style: GoogleFonts.vt323(fontSize: 14, fontWeight: FontWeight.bold),
+                      style: GoogleFonts.vt323(
+                        fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14), 
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   ...widget.replies.take(5).map((reply) => _ReplyPreview(reply: reply)),
                   if (widget.replies.length > 5)
                     Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: ResponsiveHelper.getResponsivePadding(context),
                       child: Text(
                         '... and ${widget.replies.length - 5} more replies',
-                        style: GoogleFonts.vt323(fontSize: 12, color: Colors.black54),
+                        style: GoogleFonts.vt323(
+                          fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12), 
+                          color: Colors.black54,
+                        ),
                       ),
                     ),
                 ],
@@ -488,7 +658,7 @@ class _ReplyPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(8),
+      padding: ResponsiveHelper.getResponsivePadding(context),
       decoration: const BoxDecoration(
         border: Border(bottom: BorderSide(color: Colors.black12, width: 1)),
       ),
@@ -503,15 +673,17 @@ class _ReplyPreview extends StatelessWidget {
             ),
             child: Text(
               reply.formattedId,
-              style: GoogleFonts.vt323(fontSize: 10),
+              style: GoogleFonts.vt323(
+                fontSize: ResponsiveHelper.getResponsiveFontSize(context, 10),
+              ),
             ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 8)),
           if (reply.imagePath != null)
             Container(
-              width: 40,
-              height: 40,
-              margin: const EdgeInsets.only(right: 8),
+              width: ResponsiveHelper.isSmallScreen(context) ? 30 : 40,
+              height: ResponsiveHelper.isSmallScreen(context) ? 30 : 40,
+              margin: EdgeInsets.only(right: ResponsiveHelper.getResponsiveSpacing(context, 8)),
               child: Image.file(
                 File(reply.imagePath!),
                 fit: BoxFit.cover,
@@ -523,14 +695,19 @@ class _ReplyPreview extends StatelessWidget {
               children: [
                 Text(
                   _formatTime(reply.createdAt),
-                  style: GoogleFonts.vt323(fontSize: 10, color: Colors.black54),
+                  style: GoogleFonts.vt323(
+                    fontSize: ResponsiveHelper.getResponsiveFontSize(context, 10), 
+                    color: Colors.black54,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Container(
-                  constraints: const BoxConstraints(maxHeight: 30),
+                  constraints: BoxConstraints(
+                    maxHeight: ResponsiveHelper.isSmallScreen(context) ? 40 : 30,
+                  ),
                   child: ImageboardText(
                     text: reply.content,
-                    fontSize: 12,
+                    fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12),
                     defaultColor: Colors.black87,
                   ),
                 ),
@@ -556,7 +733,7 @@ class _DeleteThreadConfirmationDialog extends StatelessWidget {
         side: BorderSide(color: Colors.black, width: 2),
       ),
       title: Container(
-        padding: const EdgeInsets.all(8),
+        padding: ResponsiveHelper.getResponsivePadding(context),
         decoration: BoxDecoration(
           color: const Color(0xFFC0C0C0),
           border: Border.all(color: Colors.black, width: 1),
@@ -564,95 +741,127 @@ class _DeleteThreadConfirmationDialog extends StatelessWidget {
         child: Row(
           children: [
             Icon(Icons.warning, color: Colors.red),
-            const SizedBox(width: 8),
-            Text(
-              'CONFIRM DELETE THREAD',
-              style: GoogleFonts.vt323(fontSize: 18, fontWeight: FontWeight.bold),
+            SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 8)),
+            Expanded(
+              child: Text(
+                'CONFIRM DELETE THREAD',
+                style: GoogleFonts.vt323(
+                  fontSize: ResponsiveHelper.getResponsiveFontSize(context, 18), 
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ],
         ),
       ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Are you sure you want to delete this thread?',
-            style: GoogleFonts.vt323(fontSize: 16),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF0F0F0),
-              border: Border.all(color: Colors.black, width: 1),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Are you sure you want to delete this thread?',
+              style: GoogleFonts.vt323(
+                fontSize: ResponsiveHelper.getResponsiveFontSize(context, 16),
+              ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      'Board: ',
-                      style: GoogleFonts.vt323(fontSize: 14, fontWeight: FontWeight.bold),
+            SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 12)),
+            Container(
+              padding: ResponsiveHelper.getResponsivePadding(context),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0F0F0),
+                border: Border.all(color: Colors.black, width: 1),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'Board: ',
+                        style: GoogleFonts.vt323(
+                          fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14), 
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        thread.board,
+                        style: GoogleFonts.vt323(
+                          fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Text(
+                        'ID: ',
+                        style: GoogleFonts.vt323(
+                          fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14), 
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        thread.formattedId,
+                        style: GoogleFonts.vt323(
+                          fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 4)),
+                  Text(
+                    'Title: ',
+                    style: GoogleFonts.vt323(
+                      fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14), 
+                      fontWeight: FontWeight.bold,
                     ),
-                    Text(
-                      thread.board,
-                      style: GoogleFonts.vt323(fontSize: 14),
+                  ),
+                  Text(
+                    thread.title,
+                    style: GoogleFonts.vt323(
+                      fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14),
                     ),
-                    const SizedBox(width: 16),
-                    Text(
-                      'ID: ',
-                      style: GoogleFonts.vt323(fontSize: 14, fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      thread.formattedId,
-                      style: GoogleFonts.vt323(fontSize: 14),
-                    ),
-                  ],
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 12)),
+            Container(
+              padding: ResponsiveHelper.getResponsivePadding(context),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFDDDD),
+                border: Border.all(color: Colors.red, width: 1),
+              ),
+              child: Text(
+                'This action cannot be undone! All replies to this thread will also be deleted.',
+                style: GoogleFonts.vt323(
+                  fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12), 
+                  color: Colors.red,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Title: ',
-                  style: GoogleFonts.vt323(fontSize: 14, fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  thread.title,
-                  style: GoogleFonts.vt323(fontSize: 14),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFDDDD),
-              border: Border.all(color: Colors.red, width: 1),
-            ),
-            child: Text(
-              'This action cannot be undone! All replies to this thread will also be deleted.',
-              style: GoogleFonts.vt323(fontSize: 12, color: Colors.red),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
       actions: [
         retro.RetroButton(
           onTap: () => Navigator.of(context).pop(false),
           child: Text(
             'CANCEL',
-            style: GoogleFonts.vt323(fontSize: 14),
+            style: GoogleFonts.vt323(
+              fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14),
+            ),
           ),
         ),
-        const SizedBox(width: 8),
+        SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 8)),
         retro.RetroButton(
           onTap: () => Navigator.of(context).pop(true),
           child: Text(
             'DELETE THREAD',
-            style: GoogleFonts.vt323(fontSize: 14, color: Colors.red),
+            style: GoogleFonts.vt323(
+              fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14), 
+              color: Colors.red,
+            ),
           ),
         ),
       ],

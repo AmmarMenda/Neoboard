@@ -7,9 +7,10 @@ import '../widgets/retro_button.dart' as retro;
 import '../database/database_helper.dart';
 import '../models/thread.dart';
 import '../widgets/imageboard_text.dart';
+import '../utils/responsive_helper.dart';
 import 'board_screen.dart';
 import 'thread_screen.dart';
-import 'moderator_login_screen.dart'; // Add this import
+import 'moderator_login_screen.dart';
 
 class BoardListScreen extends StatefulWidget {
   const BoardListScreen({super.key});
@@ -33,7 +34,7 @@ class _BoardListScreenState extends State<BoardListScreen> {
     try {
       final threads = await _dbHelper.getAllThreads();
       setState(() {
-        _recentThreads = threads.take(20).toList(); // Show latest 20 threads
+        _recentThreads = threads.take(20).toList();
         _isLoading = false;
       });
     } catch (e) {
@@ -87,54 +88,109 @@ class _BoardListScreenState extends State<BoardListScreen> {
       ),
       body: Column(
         children: [
-          // Moderator Login Section
+          // Moderator Login Section - Responsive
           Container(
-  width: double.infinity,
-  padding: const EdgeInsets.all(16),
-  decoration: const BoxDecoration(
-    color: Color(0xFFFFE6E6),
-    border: Border(
-      bottom: BorderSide(color: Colors.black, width: 1),
-    ),
-  ),
-  child: Row(
-    children: [
-      Icon(
-        Icons.security,
-        size: 20,
-        color: Colors.black54,
-      ),
-      const SizedBox(width: 8),
-      Text(
-        'Staff Access:',
-        style: GoogleFonts.vt323(fontSize: 14, color: Colors.black54),
-      ),
-      const SizedBox(width: 12),
-      retro.RetroButton(
-        onTap: _openModeratorLogin,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.login, size: 16),
-            const SizedBox(width: 4),
-            Text(
-              'Moderator Login',
-              style: GoogleFonts.vt323(fontSize: 14),
+            width: double.infinity,
+            padding: ResponsiveHelper.getResponsivePadding(context),
+            decoration: const BoxDecoration(
+              color: Color(0xFFFFE6E6),
+              border: Border(
+                bottom: BorderSide(color: Colors.black, width: 1),
+              ),
             ),
-          ],
-        ),
-      ),
-      const Spacer(),
-      Text(
-        'Dont missuse', // Updated credentials hint
-        style: GoogleFonts.vt323(
-          fontSize: 12,
-          color: Colors.black45,
-        ),
-      ),
-    ],
-  ),
-),          // Main Content
+            child: ResponsiveHelper.isSmallScreen(context)
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.security,
+                            size: 16,
+                            color: Colors.black54,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Staff Access:',
+                            style: GoogleFonts.vt323(
+                              fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14), 
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: retro.RetroButton(
+                              onTap: _openModeratorLogin,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.login, size: 16),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Moderator Login',
+                                    style: GoogleFonts.vt323(
+                                      fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Demo: batman/ammar007',
+                        style: GoogleFonts.vt323(
+                          fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12),
+                          color: Colors.black45,
+                        ),
+                      ),
+                    ],
+                  )
+                : Row(
+                    children: [
+                      Icon(
+                        Icons.security,
+                        size: 20,
+                        color: Colors.black54,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Staff Access:',
+                        style: GoogleFonts.vt323(fontSize: 14, color: Colors.black54),
+                      ),
+                      const SizedBox(width: 12),
+                      retro.RetroButton(
+                        onTap: _openModeratorLogin,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.login, size: 16),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Moderator Login',
+                              style: GoogleFonts.vt323(fontSize: 14),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        'Demo: batman/ammar007',
+                        style: GoogleFonts.vt323(
+                          fontSize: 12,
+                          color: Colors.black45,
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+          // Main Content
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -150,12 +206,12 @@ class _BoardListScreenState extends State<BoardListScreen> {
   Widget _buildEmptyState() {
     return Center(
       child: Container(
-        padding: const EdgeInsets.all(32),
+        padding: ResponsiveHelper.getResponsivePadding(context) * 2,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: ResponsiveHelper.getResponsivePadding(context),
               decoration: BoxDecoration(
                 color: const Color(0xFFE0E0E0),
                 border: Border.all(color: Colors.black, width: 2),
@@ -164,10 +220,10 @@ class _BoardListScreenState extends State<BoardListScreen> {
                 children: [
                   Icon(
                     Icons.forum_outlined,
-                    size: 64,
+                    size: ResponsiveHelper.isSmallScreen(context) ? 48 : 64,
                     color: Colors.black54,
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 16)),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
@@ -177,17 +233,17 @@ class _BoardListScreenState extends State<BoardListScreen> {
                     child: Text(
                       'NO CURRENT THREADS',
                       style: GoogleFonts.vt323(
-                        fontSize: 24,
+                        fontSize: ResponsiveHelper.getResponsiveFontSize(context, 24),
                         fontWeight: FontWeight.bold,
                         color: Colors.black,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 12)),
                   Text(
                     'Create the first thread in any board to get started!',
                     style: GoogleFonts.vt323(
-                      fontSize: 16,
+                      fontSize: ResponsiveHelper.getResponsiveFontSize(context, 16),
                       color: Colors.black54,
                     ),
                     textAlign: TextAlign.center,
@@ -202,53 +258,62 @@ class _BoardListScreenState extends State<BoardListScreen> {
   }
 }
 
-// Keep all the existing _RecentThreadsGrid, _ThreadCard, and _ThreadImage classes unchanged...
-
 class _RecentThreadsGrid extends StatelessWidget {
   final List<Thread> threads;
 
   const _RecentThreadsGrid({required this.threads});
 
+  // FIXED: Removed context usage from this method
   int _computeCrossAxisCount(double width) {
-    if (width >= 1200) return 5;
-    if (width >= 900) return 4;
-    if (width >= 650) return 3;
-    return 2;
+    if (width < 400) return 1;      // Very small screens
+    if (width < 600) return 2;      // Small screens  
+    if (width < 900) return 3;      // Medium screens
+    if (width < 1200) return 4;     // Large screens
+    return 5;                       // Very large screens
   }
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Header section showing thread count
+        // Header section
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: ResponsiveHelper.getResponsivePadding(context),
           decoration: const BoxDecoration(
             color: Color(0xFFE0E0E0),
             border: Border(
               bottom: BorderSide(color: Colors.black, width: 1),
             ),
           ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFC0C0C0),
-                  border: Border.all(color: Colors.black, width: 1),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFC0C0C0),
+                    border: Border.all(color: Colors.black, width: 1),
+                  ),
+                  child: Text(
+                    'RECENT THREADS',
+                    style: GoogleFonts.vt323(
+                      fontSize: ResponsiveHelper.getResponsiveFontSize(context, 16), 
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
-                child: Text(
-                  'RECENT THREADS',
-                  style: GoogleFonts.vt323(fontSize: 16, fontWeight: FontWeight.bold),
+                SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 12)),
+                Text(
+                  '${threads.length} threads across all boards',
+                  style: GoogleFonts.vt323(
+                    fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14), 
+                    color: Colors.black54,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                '${threads.length} threads across all boards',
-                style: GoogleFonts.vt323(fontSize: 14, color: Colors.black54),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
         // Threads grid
@@ -257,14 +322,14 @@ class _RecentThreadsGrid extends StatelessWidget {
             builder: (context, constraints) {
               final count = _computeCrossAxisCount(constraints.maxWidth);
               return Padding(
-                padding: const EdgeInsets.all(12),
+                padding: ResponsiveHelper.getResponsivePadding(context),
                 child: GridView.builder(
                   itemCount: threads.length,
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: count,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: 3 / 4,
+                    crossAxisSpacing: ResponsiveHelper.getResponsiveSpacing(context, 12),
+                    mainAxisSpacing: ResponsiveHelper.getResponsiveSpacing(context, 12),
+                    childAspectRatio: ResponsiveHelper.isSmallScreen(context) ? 0.8 : 3 / 4,
                   ),
                   itemBuilder: (context, index) {
                     final thread = threads[index];
@@ -322,61 +387,80 @@ class _ThreadCard extends StatelessWidget {
                     top: BorderSide(color: Colors.black, width: 1),
                   ),
                 ),
-                padding: const EdgeInsets.all(8),
+                padding: ResponsiveHelper.getResponsivePadding(context),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: silver,
-                            border: Border.all(color: Colors.black, width: 1),
+                    // Board and ID - Single scrollable row
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: silver,
+                              border: Border.all(color: Colors.black, width: 1),
+                            ),
+                            child: Text(
+                              thread.board,
+                              style: GoogleFonts.vt323(
+                                fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14), 
+                                color: Colors.black,
+                              ),
+                            ),
                           ),
-                          child: Text(
-                            thread.board,
-                            style: GoogleFonts.vt323(fontSize: 14, color: Colors.black),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFDDDD),
+                              border: Border.all(color: Colors.black, width: 1),
+                            ),
+                            child: Text(
+                              thread.formattedId,
+                              style: GoogleFonts.vt323(
+                                fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12), 
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFDDDD),
-                            border: Border.all(color: Colors.black, width: 1),
-                          ),
-                          child: Text(
-                            thread.formattedId,
-                            style: GoogleFonts.vt323(fontSize: 12, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 4)),
                     Text(
                       '${thread.replies} replies',
-                      style: GoogleFonts.vt323(fontSize: 12, color: Colors.black54),
+                      style: GoogleFonts.vt323(
+                        fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12), 
+                        color: Colors.black54,
+                      ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      thread.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.vt323(fontSize: 18, color: Colors.black),
+                    SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 8)),
+                    // Title with proper overflow handling
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        thread.title,
+                        style: GoogleFonts.vt323(
+                          fontSize: ResponsiveHelper.getResponsiveFontSize(context, 18), 
+                          color: Colors.black,
+                        ),
+                        maxLines: ResponsiveHelper.isSmallScreen(context) ? 2 : 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                    const Spacer(),
-                    // Show a preview of the content with formatting
+                    // Content preview
                     if (thread.content.isNotEmpty)
-                      Container(
-                        height: 30,
+                      Expanded(
+                        flex: 1,
                         child: ImageboardText(
                           text: thread.content,
-                          fontSize: 12,
+                          fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12),
                           defaultColor: Colors.black54,
                         ),
                       ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 4)),
                     Container(
                       height: 1,
                       color: Colors.black12,
@@ -405,7 +489,10 @@ class _ThreadImage extends StatelessWidget {
         child: Center(
           child: Text(
             'NO IMAGE',
-            style: GoogleFonts.vt323(fontSize: 20, color: Colors.black54),
+            style: GoogleFonts.vt323(
+              fontSize: ResponsiveHelper.getResponsiveFontSize(context, 20), 
+              color: Colors.black54,
+            ),
           ),
         ),
       );
@@ -419,7 +506,10 @@ class _ThreadImage extends StatelessWidget {
         child: Center(
           child: Text(
             'IMAGE ERROR',
-            style: GoogleFonts.vt323(fontSize: 20, color: Colors.black54),
+            style: GoogleFonts.vt323(
+              fontSize: ResponsiveHelper.getResponsiveFontSize(context, 20), 
+              color: Colors.black54,
+            ),
           ),
         ),
       ),

@@ -8,6 +8,7 @@ import '../models/report.dart';
 import '../models/thread.dart';
 import '../models/post.dart';
 import '../widgets/imageboard_text.dart';
+import '../utils/responsive_helper.dart';
 
 class ModeratorReportsScreen extends StatefulWidget {
   const ModeratorReportsScreen({super.key});
@@ -112,7 +113,9 @@ class _ModeratorReportsScreenState extends State<ModeratorReportsScreen> {
       appBar: AppBar(
         title: Text(
           'Report Management',
-          style: GoogleFonts.vt323(fontSize: 20),
+          style: GoogleFonts.vt323(
+            fontSize: ResponsiveHelper.getResponsiveFontSize(context, 20),
+          ),
         ),
         backgroundColor: const Color(0xFFC0C0C0),
         elevation: 0,
@@ -125,7 +128,7 @@ class _ModeratorReportsScreenState extends State<ModeratorReportsScreen> {
           children: [
             // Header and Controls
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: ResponsiveHelper.getResponsivePadding(context),
               decoration: const BoxDecoration(
                 color: Color(0xFFC0C0C0),
                 border: Border(
@@ -135,68 +138,136 @@ class _ModeratorReportsScreenState extends State<ModeratorReportsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Icon(Icons.report_problem, color: Colors.red),
-                      const SizedBox(width: 8),
-                      Text(
-                        'REPORT MANAGEMENT',
-                        style: GoogleFonts.vt323(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Text(
-                        'Filter by Status:',
-                        style: GoogleFonts.vt323(fontSize: 14),
-                      ),
-                      const SizedBox(width: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border.all(color: Colors.black, width: 1),
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: _selectedStatus,
-                            style: GoogleFonts.vt323(fontSize: 14, color: Colors.black),
-                            items: _statuses.map((String status) {
-                              return DropdownMenuItem<String>(
-                                value: status,
-                                child: Text(status),
-                              );
-                            }).toList(),
-                            onChanged: (String? newValue) {
-                              if (newValue != null) {
-                                setState(() {
-                                  _selectedStatus = newValue;
-                                });
-                                _loadReports();
-                              }
-                            },
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        Icon(Icons.report_problem, color: Colors.red),
+                        SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 8)),
+                        Text(
+                          'REPORT MANAGEMENT',
+                          style: GoogleFonts.vt323(
+                            fontSize: ResponsiveHelper.getResponsiveFontSize(context, 20),
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                      ),
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFDDDD),
-                          border: Border.all(color: Colors.black, width: 1),
-                        ),
-                        child: Text(
-                          '${_reports.length} reports',
-                          style: GoogleFonts.vt323(fontSize: 14),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
+                  SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 12)),
+                  // Responsive filter section
+                  ResponsiveHelper.isSmallScreen(context)
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Filter by Status:',
+                              style: GoogleFonts.vt323(
+                                fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14),
+                              ),
+                            ),
+                            SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 8)),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      border: Border.all(color: Colors.black, width: 1),
+                                    ),
+                                    child: DropdownButtonHideUnderline(
+                                      child: DropdownButton<String>(
+                                        value: _selectedStatus,
+                                        isExpanded: true,
+                                        style: GoogleFonts.vt323(
+                                          fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14), 
+                                          color: Colors.black,
+                                        ),
+                                        items: _statuses.map((String status) {
+                                          return DropdownMenuItem<String>(
+                                            value: status,
+                                            child: Text(status),
+                                          );
+                                        }).toList(),
+                                        onChanged: (String? newValue) {
+                                          if (newValue != null) {
+                                            setState(() {
+                                              _selectedStatus = newValue;
+                                            });
+                                            _loadReports();
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 12)),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFFDDDD),
+                                    border: Border.all(color: Colors.black, width: 1),
+                                  ),
+                                  child: Text(
+                                    '${_reports.length}',
+                                    style: GoogleFonts.vt323(
+                                      fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        )
+                      : Row(
+                          children: [
+                            Text(
+                              'Filter by Status:',
+                              style: GoogleFonts.vt323(fontSize: 14),
+                            ),
+                            const SizedBox(width: 12),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                border: Border.all(color: Colors.black, width: 1),
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: _selectedStatus,
+                                  style: GoogleFonts.vt323(fontSize: 14, color: Colors.black),
+                                  items: _statuses.map((String status) {
+                                    return DropdownMenuItem<String>(
+                                      value: status,
+                                      child: Text(status),
+                                    );
+                                  }).toList(),
+                                  onChanged: (String? newValue) {
+                                    if (newValue != null) {
+                                      setState(() {
+                                        _selectedStatus = newValue;
+                                      });
+                                      _loadReports();
+                                    }
+                                  },
+                                ),
+                              ),
+                            ),
+                            const Spacer(),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFDDDD),
+                                border: Border.all(color: Colors.black, width: 1),
+                              ),
+                              child: Text(
+                                '${_reports.length} reports',
+                                style: GoogleFonts.vt323(fontSize: 14),
+                              ),
+                            ),
+                          ],
+                        ),
                 ],
               ),
             ),
@@ -208,11 +279,14 @@ class _ModeratorReportsScreenState extends State<ModeratorReportsScreen> {
                       ? Center(
                           child: Text(
                             'No reports found',
-                            style: GoogleFonts.vt323(fontSize: 18, color: Colors.black54),
+                            style: GoogleFonts.vt323(
+                              fontSize: ResponsiveHelper.getResponsiveFontSize(context, 18), 
+                              color: Colors.black54,
+                            ),
                           ),
                         )
                       : ListView.builder(
-                          padding: const EdgeInsets.all(8),
+                          padding: ResponsiveHelper.getResponsivePadding(context),
                           itemCount: _reports.length,
                           itemBuilder: (context, index) {
                             final report = _reports[index];
@@ -306,7 +380,7 @@ class _ReportCardState extends State<_ReportCard> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: ResponsiveHelper.getResponsiveSpacing(context, 12)),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: Colors.black, width: 1),
@@ -314,95 +388,182 @@ class _ReportCardState extends State<_ReportCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Report Header
+          // Report Header - FIXED LAYOUT
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: ResponsiveHelper.getResponsivePadding(context),
             decoration: const BoxDecoration(
               color: Color(0xFFF0F0F0),
               border: Border(bottom: BorderSide(color: Colors.black, width: 1)),
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: widget.report.reportType == 'thread' 
-                        ? const Color(0xFFDDEEFF) 
-                        : const Color(0xFFEEDDFF),
-                    border: Border.all(color: Colors.black, width: 1),
-                  ),
-                  child: Text(
-                    widget.report.reportType.toUpperCase(),
-                    style: GoogleFonts.vt323(fontSize: 12),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: _getStatusColor(widget.report.status).withOpacity(0.1),
-                    border: Border.all(color: _getStatusColor(widget.report.status), width: 1),
-                  ),
-                  child: Text(
-                    widget.report.status.toUpperCase(),
-                    style: GoogleFonts.vt323(
-                      fontSize: 12, 
-                      color: _getStatusColor(widget.report.status),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  _formatDate(widget.report.createdAt),
-                  style: GoogleFonts.vt323(fontSize: 12, color: Colors.black54),
-                ),
-                const Spacer(),
-                // Action buttons
-                if (widget.report.status == 'pending') ...[
-                  retro.RetroButton(
-                    onTap: () => widget.onStatusUpdate('reviewed'),
-                    child: Text(
-                      'REVIEWED',
-                      style: GoogleFonts.vt323(fontSize: 12, color: Colors.green),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  retro.RetroButton(
-                    onTap: () => widget.onStatusUpdate('dismissed'),
-                    child: Text(
-                      'DISMISS',
-                      style: GoogleFonts.vt323(fontSize: 12, color: Colors.grey),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                retro.RetroButton(
-                  onTap: widget.onDelete,
+                // First row - Report info
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
                   child: Row(
-                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.delete, size: 14, color: Colors.red),
-                      const SizedBox(width: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: widget.report.reportType == 'thread' 
+                              ? const Color(0xFFDDEEFF) 
+                              : const Color(0xFFEEDDFF),
+                          border: Border.all(color: Colors.black, width: 1),
+                        ),
+                        child: Text(
+                          widget.report.reportType.toUpperCase(),
+                          style: GoogleFonts.vt323(
+                            fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: _getStatusColor(widget.report.status).withOpacity(0.1),
+                          border: Border.all(color: _getStatusColor(widget.report.status), width: 1),
+                        ),
+                        child: Text(
+                          widget.report.status.toUpperCase(),
+                          style: GoogleFonts.vt323(
+                            fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12), 
+                            color: _getStatusColor(widget.report.status),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
                       Text(
-                        'DELETE',
-                        style: GoogleFonts.vt323(fontSize: 12, color: Colors.red),
+                        _formatDate(widget.report.createdAt),
+                        style: GoogleFonts.vt323(
+                          fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12), 
+                          color: Colors.black54,
+                        ),
                       ),
                     ],
                   ),
                 ),
+                SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 8)),
+                // Second row - Action buttons (responsive layout)
+                ResponsiveHelper.getScreenWidth(context) < 500
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (widget.report.status == 'pending') ...[
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: retro.RetroButton(
+                                    onTap: () => widget.onStatusUpdate('reviewed'),
+                                    child: Text(
+                                      'REVIEWED',
+                                      style: GoogleFonts.vt323(
+                                        fontSize: ResponsiveHelper.getResponsiveFontSize(context, 11), 
+                                        color: Colors.green,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: retro.RetroButton(
+                                    onTap: () => widget.onStatusUpdate('dismissed'),
+                                    child: Text(
+                                      'DISMISS',
+                                      style: GoogleFonts.vt323(
+                                        fontSize: ResponsiveHelper.getResponsiveFontSize(context, 11), 
+                                        color: Colors.grey,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                          ],
+                          retro.RetroButton(
+                            onTap: widget.onDelete,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.delete, size: 14, color: Colors.red),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'DELETE',
+                                  style: GoogleFonts.vt323(
+                                    fontSize: ResponsiveHelper.getResponsiveFontSize(context, 11), 
+                                    color: Colors.red,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      )
+                    : SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            if (widget.report.status == 'pending') ...[
+                              retro.RetroButton(
+                                onTap: () => widget.onStatusUpdate('reviewed'),
+                                child: Text(
+                                  'REVIEWED',
+                                  style: GoogleFonts.vt323(
+                                    fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12), 
+                                    color: Colors.green,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              retro.RetroButton(
+                                onTap: () => widget.onStatusUpdate('dismissed'),
+                                child: Text(
+                                  'DISMISS',
+                                  style: GoogleFonts.vt323(
+                                    fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12), 
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                            ],
+                            retro.RetroButton(
+                              onTap: widget.onDelete,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.delete, size: 14, color: Colors.red),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'DELETE',
+                                    style: GoogleFonts.vt323(
+                                      fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12), 
+                                      color: Colors.red,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
               ],
             ),
           ),
           // Report Content
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: ResponsiveHelper.getResponsivePadding(context),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Reason
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: ResponsiveHelper.getResponsivePadding(context),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFFEEEE),
                     border: Border.all(color: Colors.red.shade200, width: 1),
@@ -412,22 +573,27 @@ class _ReportCardState extends State<_ReportCard> {
                     children: [
                       Text(
                         'Reason: ${widget.report.reason}',
-                        style: GoogleFonts.vt323(fontSize: 14, fontWeight: FontWeight.bold),
+                        style: GoogleFonts.vt323(
+                          fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14), 
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       if (widget.report.description != null) ...[
-                        const SizedBox(height: 4),
+                        SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 4)),
                         Text(
                           'Details: ${widget.report.description}',
-                          style: GoogleFonts.vt323(fontSize: 14),
+                          style: GoogleFonts.vt323(
+                            fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14),
+                          ),
                         ),
                       ],
                     ],
                   ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 12)),
                 // Target Content
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: ResponsiveHelper.getResponsivePadding(context),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF8F8F8),
                     border: Border.all(color: Colors.black54, width: 1),
@@ -437,17 +603,23 @@ class _ReportCardState extends State<_ReportCard> {
                     children: [
                       Text(
                         'Reported ${widget.report.reportType}:',
-                        style: GoogleFonts.vt323(fontSize: 14, fontWeight: FontWeight.bold),
+                        style: GoogleFonts.vt323(
+                          fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14), 
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 4)),
                       _isLoadingTarget
                           ? Text(
                               'Loading...',
-                              style: GoogleFonts.vt323(fontSize: 14, color: Colors.black54),
+                              style: GoogleFonts.vt323(
+                                fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14), 
+                                color: Colors.black54,
+                              ),
                             )
                           : ImageboardText(
                               text: _targetContent,
-                              fontSize: 14,
+                              fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14),
                               defaultColor: Colors.black87,
                             ),
                     ],
@@ -475,7 +647,7 @@ class _DeleteReportConfirmationDialog extends StatelessWidget {
         side: BorderSide(color: Colors.black, width: 2),
       ),
       title: Container(
-        padding: const EdgeInsets.all(8),
+        padding: ResponsiveHelper.getResponsivePadding(context),
         decoration: BoxDecoration(
           color: const Color(0xFFC0C0C0),
           border: Border.all(color: Colors.black, width: 1),
@@ -483,63 +655,84 @@ class _DeleteReportConfirmationDialog extends StatelessWidget {
         child: Row(
           children: [
             Icon(Icons.warning, color: Colors.red),
-            const SizedBox(width: 8),
-            Text(
-              'CONFIRM DELETE REPORT',
-              style: GoogleFonts.vt323(fontSize: 18, fontWeight: FontWeight.bold),
+            SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 8)),
+            Expanded(
+              child: Text(
+                'CONFIRM DELETE REPORT',
+                style: GoogleFonts.vt323(
+                  fontSize: ResponsiveHelper.getResponsiveFontSize(context, 18), 
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ],
         ),
       ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Are you sure you want to delete this report?',
-            style: GoogleFonts.vt323(fontSize: 16),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF0F0F0),
-              border: Border.all(color: Colors.black, width: 1),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Are you sure you want to delete this report?',
+              style: GoogleFonts.vt323(
+                fontSize: ResponsiveHelper.getResponsiveFontSize(context, 16),
+              ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Type: ${report.reportType}',
-                  style: GoogleFonts.vt323(fontSize: 14, fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  'Reason: ${report.reason}',
-                  style: GoogleFonts.vt323(fontSize: 14),
-                ),
-                Text(
-                  'Status: ${report.status}',
-                  style: GoogleFonts.vt323(fontSize: 14),
-                ),
-              ],
+            SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 12)),
+            Container(
+              padding: ResponsiveHelper.getResponsivePadding(context),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0F0F0),
+                border: Border.all(color: Colors.black, width: 1),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Type: ${report.reportType}',
+                    style: GoogleFonts.vt323(
+                      fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14), 
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    'Reason: ${report.reason}',
+                    style: GoogleFonts.vt323(
+                      fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14),
+                    ),
+                  ),
+                  Text(
+                    'Status: ${report.status}',
+                    style: GoogleFonts.vt323(
+                      fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
       actions: [
         retro.RetroButton(
           onTap: () => Navigator.of(context).pop(false),
           child: Text(
             'CANCEL',
-            style: GoogleFonts.vt323(fontSize: 14),
+            style: GoogleFonts.vt323(
+              fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14),
+            ),
           ),
         ),
-        const SizedBox(width: 8),
+        SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 8)),
         retro.RetroButton(
           onTap: () => Navigator.of(context).pop(true),
           child: Text(
             'DELETE',
-            style: GoogleFonts.vt323(fontSize: 14, color: Colors.red),
+            style: GoogleFonts.vt323(
+              fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14), 
+              color: Colors.red,
+            ),
           ),
         ),
       ],

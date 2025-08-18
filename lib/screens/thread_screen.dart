@@ -9,6 +9,7 @@ import '../models/post.dart';
 import '../widgets/retro_button.dart' as retro;
 import '../widgets/imageboard_text.dart';
 import '../widgets/report_dialog.dart';
+import '../utils/responsive_helper.dart';
 
 class ThreadScreen extends StatefulWidget {
   final int threadId;
@@ -177,7 +178,9 @@ class _ThreadScreenState extends State<ThreadScreen> {
       appBar: AppBar(
         title: Text(
           _thread!.title,
-          style: GoogleFonts.vt323(),
+          style: GoogleFonts.vt323(
+            fontSize: ResponsiveHelper.getResponsiveFontSize(context, 18),
+          ),
         ),
         backgroundColor: const Color(0xFFC0C0C0),
       ),
@@ -186,10 +189,12 @@ class _ThreadScreenState extends State<ThreadScreen> {
           // Original thread post - wrap in flexible container
           Container(
             width: double.infinity,
-            constraints: const BoxConstraints(maxHeight: 300),
+            constraints: BoxConstraints(
+              maxHeight: ResponsiveHelper.isSmallScreen(context) ? 250 : 300,
+            ),
             child: SingleChildScrollView(
               child: Container(
-                padding: const EdgeInsets.all(16),
+                padding: ResponsiveHelper.getResponsivePadding(context),
                 decoration: const BoxDecoration(
                   color: Color(0xFFE0E0E0),
                   border: Border(
@@ -199,72 +204,142 @@ class _ThreadScreenState extends State<ThreadScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFC0C0C0),
-                            border: Border.all(color: Colors.black, width: 1),
-                          ),
-                          child: Text(
-                            _thread!.board,
-                            style: GoogleFonts.vt323(fontSize: 14),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFDDDD),
-                            border: Border.all(color: Colors.black, width: 1),
-                          ),
-                          child: Text(
-                            _thread!.formattedId,
-                            style: GoogleFonts.vt323(fontSize: 14, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '${_thread!.replies} replies',
-                          style: GoogleFonts.vt323(fontSize: 14, color: Colors.black54),
-                        ),
-                        const Spacer(),
-                        // Add report thread button
-                        retro.RetroButton(
-                          onTap: () => _reportThread(),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                    // Thread header - responsive layout
+                    ResponsiveHelper.isSmallScreen(context)
+                        ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(Icons.report, size: 16, color: Colors.orange),
-                              const SizedBox(width: 4),
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFC0C0C0),
+                                        border: Border.all(color: Colors.black, width: 1),
+                                      ),
+                                      child: Text(
+                                        _thread!.board,
+                                        style: GoogleFonts.vt323(
+                                          fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFFFDDDD),
+                                        border: Border.all(color: Colors.black, width: 1),
+                                      ),
+                                      child: Text(
+                                        _thread!.formattedId,
+                                        style: GoogleFonts.vt323(
+                                          fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14), 
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      '${_thread!.replies} replies',
+                                      style: GoogleFonts.vt323(
+                                        fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14), 
+                                        color: Colors.black54,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              retro.RetroButton(
+                                onTap: () => _reportThread(),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.report, size: 16, color: Colors.orange),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'REPORT',
+                                      style: GoogleFonts.vt323(
+                                        fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12), 
+                                        color: Colors.orange,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          )
+                        : Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFC0C0C0),
+                                  border: Border.all(color: Colors.black, width: 1),
+                                ),
+                                child: Text(
+                                  _thread!.board,
+                                  style: GoogleFonts.vt323(fontSize: 14),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFDDDD),
+                                  border: Border.all(color: Colors.black, width: 1),
+                                ),
+                                child: Text(
+                                  _thread!.formattedId,
+                                  style: GoogleFonts.vt323(fontSize: 14, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
                               Text(
-                                'REPORT',
-                                style: GoogleFonts.vt323(fontSize: 12, color: Colors.orange),
+                                '${_thread!.replies} replies',
+                                style: GoogleFonts.vt323(fontSize: 14, color: Colors.black54),
+                              ),
+                              const Spacer(),
+                              retro.RetroButton(
+                                onTap: () => _reportThread(),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.report, size: 16, color: Colors.orange),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'REPORT',
+                                      style: GoogleFonts.vt323(fontSize: 12, color: Colors.orange),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 8)),
                     Text(
                       _thread!.title,
-                      style: GoogleFonts.vt323(fontSize: 20, fontWeight: FontWeight.bold),
+                      style: GoogleFonts.vt323(
+                        fontSize: ResponsiveHelper.getResponsiveFontSize(context, 20), 
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 8)),
                     if (_thread!.imagePath != null)
                       Container(
-                        margin: const EdgeInsets.only(bottom: 8),
+                        margin: EdgeInsets.only(bottom: ResponsiveHelper.getResponsiveSpacing(context, 8)),
                         child: Image.file(
                           File(_thread!.imagePath!),
-                          height: 200,
+                          height: ResponsiveHelper.isSmallScreen(context) ? 150 : 200,
                           fit: BoxFit.contain,
                         ),
                       ),
                     ImageboardText(
                       text: _thread!.content,
-                      fontSize: 16,
+                      fontSize: ResponsiveHelper.getResponsiveFontSize(context, 16),
                     ),
                   ],
                 ),
@@ -274,7 +349,7 @@ class _ThreadScreenState extends State<ThreadScreen> {
           // Posts list - Use Expanded to take available space
           Expanded(
             child: ListView.builder(
-              padding: const EdgeInsets.all(8),
+              padding: ResponsiveHelper.getResponsivePadding(context),
               itemCount: _posts.length,
               itemBuilder: (context, index) {
                 final post = _posts[index];
@@ -285,12 +360,14 @@ class _ThreadScreenState extends State<ThreadScreen> {
               },
             ),
           ),
-          // Reply input section - constrain height and make scrollable
+          // Reply input section - responsive layout
           Container(
-            constraints: const BoxConstraints(maxHeight: 200),
+            constraints: BoxConstraints(
+              maxHeight: ResponsiveHelper.isSmallScreen(context) ? 180 : 200,
+            ),
             child: SingleChildScrollView(
               child: Container(
-                padding: const EdgeInsets.all(16),
+                padding: ResponsiveHelper.getResponsivePadding(context),
                 decoration: const BoxDecoration(
                   color: Color(0xFFE0E0E0),
                   border: Border(
@@ -304,8 +381,8 @@ class _ThreadScreenState extends State<ThreadScreen> {
                     // Selected image preview
                     if (_selectedImage != null)
                       Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.all(8),
+                        margin: EdgeInsets.only(bottom: ResponsiveHelper.getResponsiveSpacing(context, 12)),
+                        padding: ResponsiveHelper.getResponsivePadding(context),
                         decoration: BoxDecoration(
                           color: const Color(0xFFC0C0C0),
                           border: Border.all(color: Colors.black, width: 1),
@@ -316,16 +393,18 @@ class _ThreadScreenState extends State<ThreadScreen> {
                               borderRadius: BorderRadius.circular(4),
                               child: Image.file(
                                 File(_selectedImage!.path),
-                                width: 60,
-                                height: 60,
+                                width: ResponsiveHelper.isSmallScreen(context) ? 40 : 60,
+                                height: ResponsiveHelper.isSmallScreen(context) ? 40 : 60,
                                 fit: BoxFit.cover,
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 12)),
                             Expanded(
                               child: Text(
                                 'Image attached',
-                                style: GoogleFonts.vt323(fontSize: 14),
+                                style: GoogleFonts.vt323(
+                                  fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14),
+                                ),
                               ),
                             ),
                             IconButton(
@@ -339,48 +418,98 @@ class _ThreadScreenState extends State<ThreadScreen> {
                           ],
                         ),
                       ),
-                    // Reply input row
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        // Image picker button
-                        retro.RetroButton(
-                          onTap: _pickImageForReply,
-                          child: const Icon(Icons.image, size: 20),
-                        ),
-                        const SizedBox(width: 8),
-                        // Text input - constrain height
-                        Expanded(
-                          child: Container(
-                            constraints: const BoxConstraints(maxHeight: 100),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              border: Border.all(color: Colors.black, width: 1),
-                            ),
-                            child: TextField(
-                              controller: _replyController,
-                              decoration: const InputDecoration(
-                                hintText: 'Write a reply...',
-                                border: InputBorder.none,
-                                contentPadding: EdgeInsets.all(12),
+                    // Reply input - responsive layout
+                    ResponsiveHelper.getScreenWidth(context) < 400
+                        ? Column(
+                            children: [
+                              // Text input full width
+                              Container(
+                                constraints: const BoxConstraints(maxHeight: 80),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  border: Border.all(color: Colors.black, width: 1),
+                                ),
+                                child: TextField(
+                                  controller: _replyController,
+                                  decoration: const InputDecoration(
+                                    hintText: 'Write a reply...',
+                                    border: InputBorder.none,
+                                    contentPadding: EdgeInsets.all(12),
+                                  ),
+                                  maxLines: 2,
+                                  minLines: 1,
+                                  style: GoogleFonts.vt323(
+                                    fontSize: ResponsiveHelper.getResponsiveFontSize(context, 16),
+                                  ),
+                                ),
                               ),
-                              maxLines: 3,
-                              minLines: 1,
-                              style: GoogleFonts.vt323(fontSize: 16),
-                            ),
+                              SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 8)),
+                              // Buttons row
+                              Row(
+                                children: [
+                                  retro.RetroButton(
+                                    onTap: _pickImageForReply,
+                                    child: const Icon(Icons.image, size: 20),
+                                  ),
+                                  SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 8)),
+                                  Expanded(
+                                    child: retro.RetroButton(
+                                      onTap: _addReply,
+                                      child: Text(
+                                        'Reply',
+                                        style: GoogleFonts.vt323(
+                                          fontSize: ResponsiveHelper.getResponsiveFontSize(context, 16),
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          )
+                        : Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              retro.RetroButton(
+                                onTap: _pickImageForReply,
+                                child: const Icon(Icons.image, size: 20),
+                              ),
+                              SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 8)),
+                              Expanded(
+                                child: Container(
+                                  constraints: const BoxConstraints(maxHeight: 100),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    border: Border.all(color: Colors.black, width: 1),
+                                  ),
+                                  child: TextField(
+                                    controller: _replyController,
+                                    decoration: const InputDecoration(
+                                      hintText: 'Write a reply...',
+                                      border: InputBorder.none,
+                                      contentPadding: EdgeInsets.all(12),
+                                    ),
+                                    maxLines: 3,
+                                    minLines: 1,
+                                    style: GoogleFonts.vt323(
+                                      fontSize: ResponsiveHelper.getResponsiveFontSize(context, 16),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 8)),
+                              retro.RetroButton(
+                                onTap: _addReply,
+                                child: Text(
+                                  'Reply',
+                                  style: GoogleFonts.vt323(
+                                    fontSize: ResponsiveHelper.getResponsiveFontSize(context, 16),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        // Submit button
-                        retro.RetroButton(
-                          onTap: _addReply,
-                          child: Text(
-                            'Reply',
-                            style: GoogleFonts.vt323(fontSize: 16),
-                          ),
-                        ),
-                      ],
-                    ),
                   ],
                 ),
               ),
@@ -402,8 +531,8 @@ class _PostCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      margin: EdgeInsets.only(bottom: ResponsiveHelper.getResponsiveSpacing(context, 8)),
+      padding: ResponsiveHelper.getResponsivePadding(context),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: Colors.black, width: 1),
@@ -413,48 +542,61 @@ class _PostCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           // Post header with ID, timestamp, and report button
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFC0C0C0),
-                  border: Border.all(color: Colors.black, width: 1),
-                ),
-                child: Text(
-                  post.formattedId,
-                  style: GoogleFonts.vt323(fontSize: 12, fontWeight: FontWeight.bold),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                _formatTime(post.createdAt),
-                style: GoogleFonts.vt323(fontSize: 12, color: Colors.black54),
-              ),
-              const Spacer(),
-              // Add report reply button
-              retro.RetroButton(
-                onTap: onReport,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.report, size: 14, color: Colors.orange),
-                    const SizedBox(width: 4),
-                    Text(
-                      'REPORT',
-                      style: GoogleFonts.vt323(fontSize: 10, color: Colors.orange),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFC0C0C0),
+                    border: Border.all(color: Colors.black, width: 1),
+                  ),
+                  child: Text(
+                    post.formattedId,
+                    style: GoogleFonts.vt323(
+                      fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12), 
+                      fontWeight: FontWeight.bold,
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ],
+                SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 8)),
+                Text(
+                  _formatTime(post.createdAt),
+                  style: GoogleFonts.vt323(
+                    fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12), 
+                    color: Colors.black54,
+                  ),
+                ),
+                SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 8)),
+                retro.RetroButton(
+                  onTap: onReport,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.report, size: 14, color: Colors.orange),
+                      const SizedBox(width: 4),
+                      Text(
+                        'REPORT',
+                        style: GoogleFonts.vt323(
+                          fontSize: ResponsiveHelper.getResponsiveFontSize(context, 10), 
+                          color: Colors.orange,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 8)),
           // Post image if available - constrain size
           if (post.imagePath != null && post.imagePath!.isNotEmpty)
             Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              constraints: const BoxConstraints(maxHeight: 200),
+              margin: EdgeInsets.only(bottom: ResponsiveHelper.getResponsiveSpacing(context, 8)),
+              constraints: BoxConstraints(
+                maxHeight: ResponsiveHelper.isSmallScreen(context) ? 150 : 200,
+              ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(4),
                 child: Image.file(
@@ -467,7 +609,10 @@ class _PostCard extends StatelessWidget {
                       child: Center(
                         child: Text(
                           'Image Error',
-                          style: GoogleFonts.vt323(fontSize: 14, color: Colors.black54),
+                          style: GoogleFonts.vt323(
+                            fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14), 
+                            color: Colors.black54,
+                          ),
                         ),
                       ),
                     );
@@ -479,7 +624,7 @@ class _PostCard extends StatelessWidget {
           if (post.content.isNotEmpty)
             ImageboardText(
               text: post.content,
-              fontSize: 16,
+              fontSize: ResponsiveHelper.getResponsiveFontSize(context, 16),
             ),
         ],
       ),

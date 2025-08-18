@@ -1,6 +1,7 @@
 // widgets/imageboard_text.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../utils/responsive_helper.dart';
 
 class ImageboardText extends StatelessWidget {
   final String text;
@@ -16,20 +17,43 @@ class ImageboardText extends StatelessWidget {
     this.fontWeight,
   });
 
-  List<TextSpan> _parseText(String text) {
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Adjust font size based on available width and screen size
+        double adjustedFontSize = ResponsiveHelper.getResponsiveFontSize(context, fontSize);
+        
+        if (constraints.maxWidth < 300) {
+          adjustedFontSize *= 0.8;
+        } else if (constraints.maxWidth < 400) {
+          adjustedFontSize *= 0.9;
+        }
+
+        return RichText(
+          text: TextSpan(children: _parseText(text, adjustedFontSize)),
+          softWrap: true,
+          overflow: TextOverflow.clip,
+        );
+      },
+    );
+  }
+
+  List<TextSpan> _parseText(String text, [double? overrideFontSize]) {
+    final effectiveFontSize = overrideFontSize ?? fontSize;
     final lines = text.split('\n');
     final List<TextSpan> spans = [];
 
     for (int i = 0; i < lines.length; i++) {
       final line = lines[i];
-      spans.addAll(_parseLine(line));
+      spans.addAll(_parseLine(line, effectiveFontSize));
 
       // Add newline except for the last line
       if (i < lines.length - 1) {
         spans.add(
           TextSpan(
             text: '\n',
-            style: GoogleFonts.vt323(fontSize: fontSize),
+            style: GoogleFonts.vt323(fontSize: effectiveFontSize),
           ),
         );
       }
@@ -38,7 +62,7 @@ class ImageboardText extends StatelessWidget {
     return spans;
   }
 
-  List<TextSpan> _parseLine(String line) {
+  List<TextSpan> _parseLine(String line, double effectiveFontSize) {
     final List<TextSpan> lineSpans = [];
 
     // Check for greentext (lines starting with >)
@@ -47,7 +71,7 @@ class ImageboardText extends StatelessWidget {
         TextSpan(
           text: line,
           style: GoogleFonts.vt323(
-            fontSize: fontSize,
+            fontSize: effectiveFontSize,
             color: const Color(0xFF789922), // Classic 4chan green
             fontWeight: fontWeight,
           ),
@@ -63,7 +87,6 @@ class ImageboardText extends StatelessWidget {
     final RegExp quoteRegex = RegExp(r'>>(\d+)');
 
     int lastIndex = 0;
-    String remainingText = line;
 
     // Find all formatting matches
     final allMatches = <MapEntry<int, Match>>[];
@@ -93,7 +116,7 @@ class ImageboardText extends StatelessWidget {
           TextSpan(
             text: line.substring(lastIndex, match.start),
             style: GoogleFonts.vt323(
-              fontSize: fontSize,
+              fontSize: effectiveFontSize,
               color: defaultColor ?? Colors.black,
               fontWeight: fontWeight,
             ),
@@ -107,7 +130,7 @@ class ImageboardText extends StatelessWidget {
           TextSpan(
             text: match.group(1),
             style: GoogleFonts.vt323(
-              fontSize: fontSize,
+              fontSize: effectiveFontSize,
               color: defaultColor ?? Colors.black,
               fontWeight: FontWeight.bold,
             ),
@@ -118,7 +141,7 @@ class ImageboardText extends StatelessWidget {
           TextSpan(
             text: match.group(1),
             style: GoogleFonts.vt323(
-              fontSize: fontSize,
+              fontSize: effectiveFontSize,
               color: defaultColor ?? Colors.black,
               fontStyle: FontStyle.italic,
               fontWeight: fontWeight,
@@ -130,7 +153,7 @@ class ImageboardText extends StatelessWidget {
           TextSpan(
             text: match.group(1),
             style: GoogleFonts.vt323(
-              fontSize: fontSize - 2,
+              fontSize: effectiveFontSize - 2,
               color: const Color(0xFF333333),
               backgroundColor: const Color(0xFFF0F0F0),
               fontWeight: fontWeight,
@@ -142,7 +165,7 @@ class ImageboardText extends StatelessWidget {
           TextSpan(
             text: match.group(0),
             style: GoogleFonts.vt323(
-              fontSize: fontSize,
+              fontSize: effectiveFontSize,
               color: const Color(0xFF0066CC), // Blue for post quotes
               fontWeight: fontWeight,
               decoration: TextDecoration.underline,
@@ -160,7 +183,7 @@ class ImageboardText extends StatelessWidget {
         TextSpan(
           text: line.substring(lastIndex),
           style: GoogleFonts.vt323(
-            fontSize: fontSize,
+            fontSize: effectiveFontSize,
             color: defaultColor ?? Colors.black,
             fontWeight: fontWeight,
           ),
@@ -174,7 +197,7 @@ class ImageboardText extends StatelessWidget {
         TextSpan(
           text: line,
           style: GoogleFonts.vt323(
-            fontSize: fontSize,
+            fontSize: effectiveFontSize,
             color: defaultColor ?? Colors.black,
             fontWeight: fontWeight,
           ),
@@ -183,13 +206,5 @@ class ImageboardText extends StatelessWidget {
     }
 
     return lineSpans;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return RichText(
-      text: TextSpan(children: _parseText(text)),
-      softWrap: true,
-    );
   }
 }

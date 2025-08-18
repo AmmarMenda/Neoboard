@@ -2,9 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/retro_button.dart' as retro;
+import '../utils/responsive_helper.dart';
 import 'board_list_screen.dart';
 import 'moderator_thread_management_screen.dart';
-import 'moderator_report_screen.dart'; // Make sure this import exists
+import 'moderator_report_screen.dart';
 
 class ModeratorDashboardScreen extends StatelessWidget {
   const ModeratorDashboardScreen({super.key});
@@ -15,7 +16,9 @@ class ModeratorDashboardScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(
           'Moderator Dashboard',
-          style: GoogleFonts.vt323(fontSize: 20),
+          style: GoogleFonts.vt323(
+            fontSize: ResponsiveHelper.getResponsiveFontSize(context, 20),
+          ),
         ),
         backgroundColor: const Color(0xFFC0C0C0),
         automaticallyImplyLeading: false,
@@ -38,13 +41,13 @@ class ModeratorDashboardScreen extends StatelessWidget {
           color: Color(0xFFE0E0E0),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: ResponsiveHelper.getResponsivePadding(context),
           child: Column(
             children: [
               // Welcome Header
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(20),
+                padding: ResponsiveHelper.getResponsivePadding(context),
                 decoration: BoxDecoration(
                   color: const Color(0xFFC0C0C0),
                   border: Border.all(color: Colors.black, width: 2),
@@ -53,91 +56,108 @@ class ModeratorDashboardScreen extends StatelessWidget {
                   children: [
                     Icon(
                       Icons.admin_panel_settings,
-                      size: 48,
+                      size: ResponsiveHelper.isSmallScreen(context) ? 36 : 48,
                       color: Colors.black,
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 8)),
                     Text(
                       'MODERATOR PANEL',
                       style: GoogleFonts.vt323(
-                        fontSize: 28,
+                        fontSize: ResponsiveHelper.getResponsiveFontSize(context, 28),
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     Text(
                       'Manage threads, posts, and users',
                       style: GoogleFonts.vt323(
-                        fontSize: 16,
+                        fontSize: ResponsiveHelper.getResponsiveFontSize(context, 16),
                         color: Colors.black54,
                       ),
+                      textAlign: TextAlign.center,
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 24)),
               
-              // Action Buttons Grid
+              // Action Buttons Grid - Responsive
               Expanded(
-                child: GridView.count(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: 1.2,
-                  children: [
-                    _ModeratorActionCard(
-                      icon: Icons.forum,
-                      title: 'Manage Threads',
-                      description: 'View and delete threads',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const ModeratorThreadManagementScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                    _ModeratorActionCard(
-                      icon: Icons.report,
-                      title: 'Reports',
-                      description: 'Handle user reports',
-                      onTap: () {
-                        // This is the navigation that should work
-                        print('Attempting to navigate to reports screen...'); // Debug print
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const ModeratorReportsScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                    _ModeratorActionCard(
-                      icon: Icons.people,
-                      title: 'User Management',
-                      description: 'Manage user accounts',
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('User management coming soon!')),
-                        );
-                      },
-                    ),
-                    _ModeratorActionCard(
-                      icon: Icons.settings,
-                      title: 'Board Settings',
-                      description: 'Configure board settings',
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Settings coming soon!')),
-                        );
-                      },
-                    ),
-                  ],
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    int crossAxisCount;
+                    double childAspectRatio;
+                    
+                    if (constraints.maxWidth < 600) {
+                      crossAxisCount = 1; // Single column on small screens
+                      childAspectRatio = 3.0; // Wider cards on small screens
+                    } else if (constraints.maxWidth < 900) {
+                      crossAxisCount = 2; // Two columns on medium screens
+                      childAspectRatio = 1.5;
+                    } else {
+                      crossAxisCount = 2; // Two columns on large screens
+                      childAspectRatio = 1.2;
+                    }
+
+                    return GridView.count(
+                      crossAxisCount: crossAxisCount,
+                      crossAxisSpacing: ResponsiveHelper.getResponsiveSpacing(context, 16),
+                      mainAxisSpacing: ResponsiveHelper.getResponsiveSpacing(context, 16),
+                      childAspectRatio: childAspectRatio,
+                      children: [
+                        _ModeratorActionCard(
+                          icon: Icons.forum,
+                          title: 'Manage Threads',
+                          description: 'View and delete threads',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const ModeratorThreadManagementScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        _ModeratorActionCard(
+                          icon: Icons.report,
+                          title: 'Reports',
+                          description: 'Handle user reports',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const ModeratorReportsScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        _ModeratorActionCard(
+                          icon: Icons.people,
+                          title: 'User Management',
+                          description: 'Manage user accounts',
+                          onTap: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('User management coming soon!')),
+                            );
+                          },
+                        ),
+                        _ModeratorActionCard(
+                          icon: Icons.settings,
+                          title: 'Board Settings',
+                          description: 'Configure board settings',
+                          onTap: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Settings coming soon!')),
+                            );
+                          },
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
               
               // Back to Home Button
-              const SizedBox(height: 16),
+              SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 16)),
               retro.RetroButton(
                 onTap: () {
                   Navigator.pushAndRemoveUntil(
@@ -149,11 +169,16 @@ class ModeratorDashboardScreen extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.home, size: 20),
-                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.home, 
+                      size: ResponsiveHelper.isSmallScreen(context) ? 18 : 20,
+                    ),
+                    SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 8)),
                     Text(
                       'Back to Home',
-                      style: GoogleFonts.vt323(fontSize: 16),
+                      style: GoogleFonts.vt323(
+                        fontSize: ResponsiveHelper.getResponsiveFontSize(context, 16),
+                      ),
                     ),
                   ],
                 ),
@@ -184,7 +209,7 @@ class _ModeratorActionCard extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: ResponsiveHelper.getResponsivePadding(context),
         decoration: BoxDecoration(
           color: Colors.white,
           border: Border.all(color: Colors.black, width: 1),
@@ -194,26 +219,30 @@ class _ModeratorActionCard extends StatelessWidget {
           children: [
             Icon(
               icon,
-              size: 36,
+              size: ResponsiveHelper.isSmallScreen(context) ? 28 : 36,
               color: Colors.black,
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 8)),
             Text(
               title,
               style: GoogleFonts.vt323(
-                fontSize: 18,
+                fontSize: ResponsiveHelper.getResponsiveFontSize(context, 18),
                 fontWeight: FontWeight.bold,
               ),
               textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 4)),
             Text(
               description,
               style: GoogleFonts.vt323(
-                fontSize: 12,
+                fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12),
                 color: Colors.black54,
               ),
               textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
