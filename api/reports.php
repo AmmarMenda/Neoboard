@@ -1,39 +1,50 @@
 <?php
 // api/reports.php
 header("Content-Type: application/json");
-
-// Provides the $conn mysqli connection object
 require_once "db.php";
 
-// --- Input Validation & Query Building ---
-// Define allowed statuses to prevent SQL injection or unexpected behavior
 $allowed_statuses = ['pending', 'reviewed', 'dismissed'];
 $status = $_GET["status"] ?? 'all';
 
-// The base query
-$sql = "SELECT id, report_type, target_id, reason, description, created_at, status FROM reports";
+// The SQL query is updated to select the image_path from both tables
+$sql = "
+    SELECT 
+        r.id, 
+        r.report_type, 
+        r.target_id, 
+        r.reason, 
+        r.description, 
+        r.created_at, 
+        r.status,
+        t.title AS thread_title,
+        p.content AS post_content,
+        t.image_path AS thread_image_path, -- Get image from threads table
+        p.image_path AS reply_image_path   -- Get image from replies table
+    FROM 
+        reports r
+    LEFT JOIN 
+        threads t ON r.target_id = t.id AND r.report_type = 'thread'
+    LEFT JOIN 
+        replies p ON r.target_id = p.id AND r.report_type = 'reply'
+";
 
 $params = [];
 $types = '';
 
-// If a valid status is provided (and it's not 'all'), add a WHERE clause
 if (in_array($status, $allowed_statuses, true)) {
-    $sql .= " WHERE status = ?";
+    $sql .= " WHERE r.status = ?";
     $params[] = $status;
-    $types .= 's'; // 's' for string
+    $types .= 's';
 }
 
-// Add ordering
-$sql .= " ORDER BY created_at DESC";
+$sql .= " ORDER BY r.created_at DESC";
 
-// --- Database Execution ---
 try {
     $stmt = $conn->prepare($sql);
     if (!$stmt) {
         throw new Exception('Database prepare statement failed: ' . $conn->error);
     }
 
-    // Bind parameters if they exist (i.e., if filtering by status)
     if (!empty($params)) {
         $stmt->bind_param($types, ...$params);
     }
@@ -42,19 +53,32 @@ try {
     $result = $stmt->get_result();
 
     $reports = [];
-    // Fetch all results into an array
     while ($row = $result->fetch_assoc()) {
-        // Ensure numeric types are correct for JSON
         $row['id'] = (int)$row['id'];
         $row['target_id'] = (int)$row['target_id'];
+        
+        if ($row['report_type'] === 'thread') {
+            $row['reported_content'] = $row['thread_title'] ?? '[Thread not found or deleted]';
+        } elseif ($row['report_type'] === 'reply') {
+            $row['reported_content'] = $row['post_content'] ?? '[Reply not found or deleted]';
+        } else {
+            $row['reported_content'] = '[Unknown report type]';
+        }
+
+        // Add a new 'reported_image_path' field to the JSON.
+        // COALESCE will pick the first non-null value (either from the thread or the reply).
+        $row['reported_image_path'] = $row['thread_image_path'] ?? $row['reply_image_path'] ?? null;
+        
+        // Clean up unnecessary fields
+        unset($row['thread_title'], $row['post_content'], $row['thread_image_path'], $row['reply_image_path']);
+        
         $reports[] = $row;
     }
 
-    // Return the JSON-encoded array
     echo json_encode($reports);
 
 } catch (Exception $e) {
-    http_response_code(500); // Internal Server Error
+    http_response_code(500);
     echo json_encode(["error" => $e->getMessage()]);
 } finally {
     if (isset($stmt)) $stmt->close();

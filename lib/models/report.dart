@@ -2,12 +2,17 @@
 
 class Report {
   final int? id;
-  final String reportType; // 'thread' or 'reply'
+  final String reportType;
   final int targetId;
   final String reason;
   final String? description;
-  final String status;  // 'pending', 'reviewed', 'dismissed'
+  final String status;
   final DateTime createdAt;
+  final String reportedContent;
+  
+  // --- ADD THIS LINE ---
+  // The URL of the image associated with the reported content. It's nullable.
+  final String? reportedImageUrl;
 
   Report({
     this.id,
@@ -17,29 +22,24 @@ class Report {
     this.description,
     required this.status,
     required this.createdAt,
+    required this.reportedContent,
+    // --- AND ADD THIS LINE ---
+    this.reportedImageUrl,
   });
 
   factory Report.fromJson(Map<String, dynamic> json) {
     return Report(
-      id: json['id'] != null ? int.parse(json['id'].toString()) : null,
-      reportType: json['report_type'] ?? '',
-      targetId: int.parse(json['target_id'].toString()),
-      reason: json['reason'] ?? '',
-      description: json['description'],
-      status: json['status'] ?? 'pending',
+      id: json['id'] as int?,
+      reportType: json['report_type'] as String,
+      targetId: json['target_id'] as int,
+      reason: json['reason'] as String,
+      description: json['description'] as String?,
+      status: json['status'] as String,
       createdAt: DateTime.parse(json['created_at']),
+      reportedContent: json['reported_content'] as String,
+      // --- AND FINALLY, ADD THIS LINE ---
+      // This maps the 'reported_image_path' key from the JSON to our model field.
+      reportedImageUrl: json['reported_image_path'] as String?,
     );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'report_type': reportType,
-      'target_id': targetId,
-      'reason': reason,
-      'description': description,
-      'status': status,
-      'created_at': createdAt.toIso8601String(),
-    };
   }
 }
