@@ -8,14 +8,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 import '../models/thread.dart';
-import '../widgets/imageboard_text.dart';
 import '../widgets/retro_button.dart' as retro;
 import '../widgets/retro_header.dart';
 import '../utils/responsive_helper.dart';
-import '../models/post.dart';
 import 'moderator_login_screen.dart';
 import 'thread_screen.dart';
-import 'board_screen.dart';
 import 'create_thread_screen.dart';
 
 class BoardListScreen extends StatefulWidget {
@@ -47,9 +44,10 @@ class _BoardListScreenState extends State<BoardListScreen> {
     });
 
     try {
+      // This part dynamically creates the URL. If a board like '/b/' is selected,
+      // it becomes '.../threads.php?board=b', filtering the results.
       final uri = Uri.parse(
-        baseUrl +
-            '/threads.php${_selectedBoard == '/' ? '' : '?board=' + _selectedBoard.replaceAll('/', '')}',
+        '$baseUrl/threads.php${_selectedBoard == '/' ? '' : '?board=${_selectedBoard.replaceAll('/', '')}'}',
       );
       final resp = await http.get(uri);
 
@@ -72,6 +70,8 @@ class _BoardListScreenState extends State<BoardListScreen> {
     }
   }
 
+  // This method is called when a board is tapped in the header.
+  // It updates the state and re-fetches the threads for the selected board.
   void _onBoardSelected(String board) {
     setState(() {
       _selectedBoard = board;
@@ -86,13 +86,6 @@ class _BoardListScreenState extends State<BoardListScreen> {
     );
   }
 
-  void _openBoard(String board) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => BoardScreen(board: board)),
-    );
-  }
-
   void _openModeratorLogin() {
     Navigator.push(
       context,
@@ -101,6 +94,7 @@ class _BoardListScreenState extends State<BoardListScreen> {
   }
   
   void _createNewThread() async {
+    // When creating a new thread, it defaults to the currently selected board.
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -109,7 +103,7 @@ class _BoardListScreenState extends State<BoardListScreen> {
     );
 
     if (result != null) {
-      _fetchThreads();
+      _fetchThreads(); // Refresh the list to show the new thread.
     }
   }
 
@@ -122,7 +116,7 @@ class _BoardListScreenState extends State<BoardListScreen> {
         title: 'NeoBoard',
         boards: _boards,
         selectedBoard: _selectedBoard,
-        onBoardTap: _onBoardSelected,
+        onBoardTap: _onBoardSelected, // Correctly wired to filter threads.
         onSearch: (q) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Search not implemented yet. Query: $q')),
@@ -182,7 +176,7 @@ class _BoardListScreenState extends State<BoardListScreen> {
                             )
                           : _threads.isEmpty
                               ? Center(
-                                  child: Text("No threads found", style: GoogleFonts.vt323(fontSize: ResponsiveHelper.getFontSize(context, 20), color: Colors.black54)),
+                                  child: Text("No threads found on $_selectedBoard", style: GoogleFonts.vt323(fontSize: ResponsiveHelper.getFontSize(context, 20), color: Colors.black54)),
                                 )
                               : ListView.builder(
                                   padding: EdgeInsets.fromLTRB(

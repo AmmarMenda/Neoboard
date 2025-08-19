@@ -1,18 +1,20 @@
 // lib/screens/thread_screen.dart
 
+import 'dart:convert';
 import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
-import 'dart:convert';
-import 'package:flutter/foundation.dart'; // Import kIsWeb for platform checks
 
-import '../models/thread.dart';
 import '../models/post.dart';
-import '../widgets/imageboard_text.dart';
-import '../widgets/retro_button.dart' as retro;
+import '../models/thread.dart';
 import '../utils/responsive_helper.dart';
+import '../widgets/imageboard_text.dart';
+import '../widgets/report_dialog.dart'; // Make sure this import is correct
+import '../widgets/retro_button.dart' as retro;
 
 class ThreadScreen extends StatefulWidget {
   final int threadId;
@@ -24,8 +26,9 @@ class ThreadScreen extends StatefulWidget {
 }
 
 class _ThreadScreenState extends State<ThreadScreen> {
-  // IMPORTANT: Replace with your actual server address.
+  // Use /api/ subfolder for all endpoints
   static const String baseUrl = 'http://127.0.0.1:3441/';
+  static const String apiUrl = '${baseUrl}api/';
   final ImagePicker _picker = ImagePicker();
 
   Thread? thread;
@@ -56,9 +59,9 @@ class _ThreadScreenState extends State<ThreadScreen> {
       final threadResp = await http.get(threadUri).timeout(const Duration(seconds: 10));
 
       if (threadResp.statusCode != 200) {
-        throw Exception('Server error: Failed to load thread with status code ${threadResp.statusCode}');
+        throw Exception('Server error: ${threadResp.statusCode}');
       }
-      
+
       final threadJson = jsonDecode(threadResp.body);
 
       if (threadJson['success'] == true && threadJson['thread'] != null) {
@@ -68,9 +71,9 @@ class _ThreadScreenState extends State<ThreadScreen> {
         final repliesResp = await http.get(repliesUri).timeout(const Duration(seconds: 10));
 
         if (repliesResp.statusCode != 200) {
-          throw Exception('Server error: Failed to load replies with status code ${repliesResp.statusCode}');
+          throw Exception('Server error loading replies: ${repliesResp.statusCode}');
         }
-        
+
         final repliesJson = jsonDecode(repliesResp.body) as List;
         final repliesData = repliesJson.map((e) => Post.fromJson(e)).toList();
 
@@ -82,7 +85,7 @@ class _ThreadScreenState extends State<ThreadScreen> {
           });
         }
       } else {
-        throw Exception(threadJson['error'] ?? 'An unknown error occurred while fetching the thread.');
+        throw Exception(threadJson['error'] ?? 'Failed to parse thread.');
       }
     } catch (e) {
       if (mounted) {
@@ -133,29 +136,28 @@ class _ThreadScreenState extends State<ThreadScreen> {
       request.fields['thread_id'] = widget.threadId.toString();
       request.fields['content'] = content;
 
-      // **FIXED**: Use MultipartFile.fromBytes for cross-platform compatibility.
-      // This reads the image data into memory and sends it, avoiding dart:io's
-      // file path dependency which fails on the web.
       if (selectedImage != null) {
         final imageBytes = await selectedImage!.readAsBytes();
         final multipartFile = http.MultipartFile.fromBytes(
-          'image', // Server-side field name for the file
+          'image',
           imageBytes,
-          filename: selectedImage!.name, // Pass the original filename
+          filename: selectedImage!.name,
         );
         request.files.add(multipartFile);
       }
 
       final response = await request.send();
       final body = await response.stream.bytesToString();
-      
+
       if (response.statusCode == 200) {
         final jsonBody = jsonDecode(body);
         if (jsonBody['success'] == true) {
           replyController.clear();
           removeSelectedImage();
           fetchThreadAndReplies();
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Reply posted!')));
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Reply posted!')));
+          }
         } else {
           throw Exception(jsonBody['error'] ?? 'Unknown API error');
         }
@@ -168,6 +170,20 @@ class _ThreadScreenState extends State<ThreadScreen> {
       }
     }
   }
+
+  void _showReportDialog({required int targetId, required String targetType}) {
+  showDialog(
+    context: context,
+    builder: (BuildContext dialogContext) {
+      return ReportDialog(
+        targetId: targetId,
+        targetType: targetType,
+        // IMPORTANT: The URL must point to the api directory
+        baseUrl: 'http://127.0.0.1:3441/', 
+      );
+    },
+  );
+}
 
   String formatTime(DateTime time) {
     final diff = DateTime.now().difference(time);
@@ -192,11 +208,7 @@ class _ThreadScreenState extends State<ThreadScreen> {
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Text(
-              errorMessage,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.vt323(fontSize: 18, color: Colors.red),
-            ),
+            child: Text(errorMessage, textAlign: TextAlign.center, style: GoogleFonts.vt323(fontSize: 18, color: Colors.red)),
           ),
         ),
       );
@@ -208,6 +220,16 @@ class _ThreadScreenState extends State<ThreadScreen> {
       appBar: AppBar(
         title: Text(thread!.title, style: GoogleFonts.vt323(fontSize: 20)),
         backgroundColor: const Color(0xFFC0C0C0),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.flag_outlined),
+            tooltip: 'Report Thread',
+            onPressed: () => _showReportDialog(
+              targetId: thread!.id,
+              targetType: 'thread',
+            ),
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -225,10 +247,7 @@ class _ThreadScreenState extends State<ThreadScreen> {
                       const SizedBox(width: 6),
                       _pill(thread!.formattedId, color: Colors.redAccent),
                       const SizedBox(width: 10),
-                      Text(
-                        '${thread!.replies} replies',
-                        style: GoogleFonts.vt323(fontSize: 14),
-                      ),
+                      Text('${thread!.replies} replies', style: GoogleFonts.vt323(fontSize: 14)),
                     ],
                   ),
                   const SizedBox(height: 10),
@@ -240,10 +259,7 @@ class _ThreadScreenState extends State<ThreadScreen> {
                       errorBuilder: (context, error, stackTrace) => const Icon(Icons.error),
                     ),
                   const SizedBox(height: 10),
-                  Text(
-                    thread!.title,
-                    style: GoogleFonts.vt323(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
+                  Text(thread!.title, style: GoogleFonts.vt323(fontSize: 20, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 6),
                   ImageboardText(text: thread!.content ?? '', fontSize: 16),
                 ],
@@ -266,9 +282,6 @@ class _ThreadScreenState extends State<ThreadScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // **FIXED**: Conditionally display the image preview.
-                // For web, use Image.network with the object URL from XFile.
-                // For mobile, use Image.file with the file path.
                 if (selectedImage != null)
                   Stack(
                     children: [
@@ -317,10 +330,7 @@ class _ThreadScreenState extends State<ThreadScreen> {
 
   Widget _pill(String text, {Color color = const Color(0xFFC0C0C0)}) {
     return Container(
-      decoration: BoxDecoration(
-        color: color,
-        border: Border.all(color: Colors.black),
-      ),
+      decoration: BoxDecoration(color: color, border: Border.all(color: Colors.black)),
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       child: Text(text, style: GoogleFonts.vt323(fontSize: 14)),
     );
@@ -330,10 +340,7 @@ class _ThreadScreenState extends State<ThreadScreen> {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 6),
       padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: Colors.black),
-      ),
+      decoration: BoxDecoration(color: Colors.white, border: Border.all(color: Colors.black)),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -356,9 +363,23 @@ class _ThreadScreenState extends State<ThreadScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  formatTime(reply.createdAt),
-                  style: GoogleFonts.vt323(fontSize: 12, color: Colors.grey),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(formatTime(reply.createdAt), style: GoogleFonts.vt323(fontSize: 12, color: Colors.grey)),
+                    SizedBox(
+                      height: 24,
+                      child: IconButton(
+                        padding: EdgeInsets.zero,
+                        icon: const Icon(Icons.flag_outlined, size: 16, color: Colors.grey),
+                        tooltip: 'Report Reply',
+                        onPressed: () => _showReportDialog(
+                          targetId: reply.id,
+                          targetType: 'reply',
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 4),
                 ImageboardText(text: reply.content ?? '', fontSize: 14),

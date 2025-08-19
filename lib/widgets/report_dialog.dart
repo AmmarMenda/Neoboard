@@ -1,40 +1,50 @@
 // lib/widgets/report_dialog.dart
 
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../utils/responsive_helper.dart';
-import 'retro_button.dart' as retro;
+import 'package:http/http.dart' as http;
+import './retro_button.dart' as retro;
 
 class ReportDialog extends StatefulWidget {
-  final String reportType; // 'thread' or 'reply'
   final int targetId;
-  final String? targetTitle;
+  final String targetType; // 'thread' or 'reply'
+  final String baseUrl;  // The base URL for your API (e.g., http://.../api/)
 
   const ReportDialog({
     super.key,
-    required this.reportType,
     required this.targetId,
-    this.targetTitle,
+    required this.targetType,
+    required this.baseUrl,
   });
 
   @override
-  _ReportDialogState createState() => _ReportDialogState();
+  State<ReportDialog> createState() => _ReportDialogState();
 }
 
 class _ReportDialogState extends State<ReportDialog> {
   final _formKey = GlobalKey<FormState>();
+  
+  // A list of valid reasons for reporting
   final List<String> _reasons = [
     'Spam',
-    'Offensive content',
-    'Personal information',
-    'Illegal content',
+    'Hate Speech',
+    'Illegal Content',
+    'Harassment',
     'Other',
   ];
-
-  String? _selectedReason;
+  // The currently selected reason, defaulting to the first item
+  late String _selectedReason;
+  
   final TextEditingController _descriptionController = TextEditingController();
+  bool _isSubmitting = false;
 
-  bool _submitting = false;
+  @override
+  void initState() {
+    super.initState();
+    // Initialize the selected reason
+    _selectedReason = _reasons.first;
+  }
 
   @override
   void dispose() {
@@ -42,123 +52,115 @@ class _ReportDialogState extends State<ReportDialog> {
     super.dispose();
   }
 
-  void _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+  // **FIXED**: Implemented the actual API call
+  Future<void> _submitReport() async {
+    // Validate the form before proceeding
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+    
+    // Set loading state to disable the button and show an indicator
+    setState(() => _isSubmitting = true);
 
-    setState(() {
-      _submitting = true;
-    });
+    try {
+      final uri = Uri.parse('${widget.baseUrl}report_create.php');
+      final response = await http.post(
+        uri,
+        body: {
+          'target_id': widget.targetId.toString(),
+          'type': widget.targetType,
+          'reason': _selectedReason,
+          'description': _descriptionController.text.trim(),
+        },
+      );
 
-    // TODO: Implement API call to submit report via API
-    // Example:
-    // await apiProvider.submitReport(widget.reportType, widget.targetId, _selectedReason, _descriptionController.text);
+      // Check if the widget is still in the tree after the async operation
+      if (!mounted) return;
 
-    await Future.delayed(const Duration(seconds: 1)); // Simulate network delay
-
-    if (mounted) {
-      setState(() {
-        _submitting = false;
-      });
-      Navigator.of(context).pop(true);
+      // The PHP script returns 201 on successful creation
+      if (response.statusCode == 201) {
+        Navigator.of(context).pop(); // Close the dialog on success
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Report submitted successfully!'), backgroundColor: Colors.green),
+        );
+      } else {
+        // If the server returned an error, try to decode it from the response body
+        final error = json.decode(response.body)['error'] ?? 'An unknown error occurred';
+        throw Exception(error);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to submit report: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      // Always reset the submitting state, even if an error occurs
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final double dialogWidth = MediaQuery.of(context).size.width * 0.8;
-    final double maxDialogWidth = 400;
-    final bool isWide = dialogWidth > maxDialogWidth;
-
-    return Dialog(
-      backgroundColor: const Color(0xFFE0E0E0),
-      shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Container(
-        width: isWide ? maxDialogWidth : dialogWidth,
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Report ${widget.reportType.capitalize()}',
-              style: GoogleFonts.vt323(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            if (widget.targetTitle != null) ...[
-              const SizedBox(height: 10),
-              Text(
-                widget.targetTitle!,
-                style: GoogleFonts.vt323(
-                  fontSize: 16,
-                  fontStyle: FontStyle.italic,
-                  color: Colors.black87,
+    // Using AlertDialog for a standard, responsive layout
+    return AlertDialog(
+      title: Text(
+        'Report Content',
+        style: GoogleFonts.vt323(fontWeight: FontWeight.bold, fontSize: 22),
+      ),
+      content: Form(
+        key: _formKey,
+        child: SingleChildScrollView( // Prevents overflow if the keyboard appears
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<String>(
+                value: _selectedReason,
+                items: _reasons.map((reason) => DropdownMenuItem(value: reason, child: Text(reason))).toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _selectedReason = value);
+                  }
+                },
+                decoration: const InputDecoration(
+                  labelText: 'Reason',
+                  border: OutlineInputBorder(),
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
+                validator: (value) => value == null ? 'Please select a reason' : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _descriptionController,
+                decoration: const InputDecoration(
+                  labelText: 'Optional Description',
+                  hintText: 'Provide more details here...',
+                  alignLabelWithHint: true,
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 4,
               ),
             ],
-            const SizedBox(height: 20),
-            Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  DropdownButtonFormField<String>(
-                    decoration: const InputDecoration(
-                      labelText: 'Reason',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: _reasons
-                        .map(
-                          (reason) => DropdownMenuItem(
-                            value: reason,
-                            child: Text(reason),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (val) => setState(() => _selectedReason = val),
-                    validator: (val) =>
-                        val == null ? 'Please select a reason' : null,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _descriptionController,
-                    maxLines: 4,
-                    decoration: const InputDecoration(
-                      labelText: 'Additional details (optional)',
-                      border: OutlineInputBorder(),
-                    ),
-                    style: GoogleFonts.vt323(),
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: retro.RetroButton(
-                      onTap: _submitting ? null : _submit,
-                      child: _submitting
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : const Text('Submit'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+          ),
         ),
       ),
+      actions: [
+        retro.RetroButton(
+          onTap: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        retro.RetroButton(
+          onTap: _isSubmitting ? null : _submitReport, // Disable button while submitting
+          child: _isSubmitting
+              ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                )
+              : const Text('Submit'),
+        ),
+      ],
     );
   }
-}
-
-extension StringExtension on String {
-  String capitalize() =>
-      isEmpty ? '' : '${this[0].toUpperCase()}${substring(1)}';
 }
