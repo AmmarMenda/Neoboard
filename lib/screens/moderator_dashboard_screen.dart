@@ -17,7 +17,7 @@ class ModeratorDashboardScreen extends StatelessWidget {
         title: Text(
           'Moderator Dashboard',
           style: GoogleFonts.vt323(
-            fontSize: ResponsiveHelper.getResponsiveFontSize(context, 20),
+            fontSize: ResponsiveHelper.getFontSize(context, 20),
           ),
         ),
         backgroundColor: const Color(0xFFC0C0C0),
@@ -63,14 +63,14 @@ class ModeratorDashboardScreen extends StatelessWidget {
                     Text(
                       'MODERATOR PANEL',
                       style: GoogleFonts.vt323(
-                        fontSize: ResponsiveHelper.getResponsiveFontSize(context, 28),
+                        fontSize: ResponsiveHelper.getFontSize(context, 28),
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     Text(
                       'Manage threads, posts, and users',
                       style: GoogleFonts.vt323(
-                        fontSize: ResponsiveHelper.getResponsiveFontSize(context, 16),
+                        fontSize: ResponsiveHelper.getFontSize(context, 16),
                         color: Colors.black54,
                       ),
                       textAlign: TextAlign.center,
@@ -177,7 +177,7 @@ class ModeratorDashboardScreen extends StatelessWidget {
                     Text(
                       'Back to Home',
                       style: GoogleFonts.vt323(
-                        fontSize: ResponsiveHelper.getResponsiveFontSize(context, 16),
+                        fontSize: ResponsiveHelper.getFontSize(context, 16),
                       ),
                     ),
                   ],
@@ -226,7 +226,7 @@ class _ModeratorActionCard extends StatelessWidget {
             Text(
               title,
               style: GoogleFonts.vt323(
-                fontSize: ResponsiveHelper.getResponsiveFontSize(context, 18),
+                fontSize: ResponsiveHelper.getFontSize(context, 18),
                 fontWeight: FontWeight.bold,
               ),
               textAlign: TextAlign.center,
@@ -237,7 +237,7 @@ class _ModeratorActionCard extends StatelessWidget {
             Text(
               description,
               style: GoogleFonts.vt323(
-                fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12),
+                fontSize: ResponsiveHelper.getFontSize(context, 12),
                 color: Colors.black54,
               ),
               textAlign: TextAlign.center,

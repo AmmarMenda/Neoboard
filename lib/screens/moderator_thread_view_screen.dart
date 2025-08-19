@@ -1,211 +1,178 @@
-// screens/moderator_thread_view_screen.dart
+// lib/screens/moderator_thread_view_screen.dart
+
 import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:image_picker/image_picker.dart';
-import '../database/database_helper.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
 import '../models/thread.dart';
 import '../models/post.dart';
-import '../widgets/retro_button.dart' as retro;
 import '../widgets/imageboard_text.dart';
+import '../widgets/retro_button.dart' as retro;
+import '../utils/responsive_helper.dart';
 
 class ModeratorThreadViewScreen extends StatefulWidget {
   final int threadId;
-  
+
   const ModeratorThreadViewScreen({super.key, required this.threadId});
 
   @override
-  _ModeratorThreadViewScreenState createState() => _ModeratorThreadViewScreenState();
+  State<ModeratorThreadViewScreen> createState() => _ModeratorThreadViewScreenState();
 }
 
 class _ModeratorThreadViewScreenState extends State<ModeratorThreadViewScreen> {
-  final DatabaseHelper _dbHelper = DatabaseHelper();
-  Thread? _thread;
-  List<Post> _posts = [];
-  bool _isLoading = true;
+  static const String baseUrl = 'http://127.0.0.1:3441/';
+  Thread? thread;
+  List<Post> replies = [];
+  bool loading = true;
+  bool error = false;
 
   @override
   void initState() {
     super.initState();
-    _loadThreadData();
+    _loadThread();
   }
 
-  Future<void> _loadThreadData() async {
+  Future<void> _loadThread() async {
+    setState(() {
+      loading = true;
+      error = false;
+    });
+
     try {
-      final thread = await _dbHelper.getThreadById(widget.threadId);
-      final posts = await _dbHelper.getPostsByThread(widget.threadId);
-      
+      final threadResp = await http.get(Uri.parse('${baseUrl}thread.php?id=${widget.threadId}'));
+      if (threadResp.statusCode != 200) throw Exception('Failed to load thread');
+
+      final threadJson = json.decode(threadResp.body);
+      final fetchedThread = Thread.fromJson(threadJson);
+
+      final repliesResp = await http.get(Uri.parse('${baseUrl}replies.php?thread_id=${widget.threadId}'));
+      if (repliesResp.statusCode != 200) throw Exception('Failed to load replies');
+
+      final repliesJson = json.decode(repliesResp.body) as List;
+      final fetchedReplies = repliesJson.map((e) => Post.fromJson(e)).toList();
+
       setState(() {
-        _thread = thread;
-        _posts = posts;
-        _isLoading = false;
+        thread = fetchedThread;
+        replies = fetchedReplies;
+        loading = false;
       });
     } catch (e) {
-      print('Error loading thread: $e');
+      if (kDebugMode) print('Error loading thread or replies: $e');
       setState(() {
-        _isLoading = false;
+        loading = false;
+        error = true;
       });
     }
   }
 
-  Future<void> _deleteReply(Post post) async {
-    final bool? confirmed = await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return _DeleteReplyConfirmationDialog(post: post);
-      },
-    );
+  Future<void> _deleteReply(int replyId) async {
+    final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('Delete Reply'),
+            content: const Text('Are you sure you want to delete this reply?'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+              TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete', style: TextStyle(color: Colors.red))),
+            ],
+          ),
+        ) ??
+        false;
 
-    if (confirmed == true) {
-      try {
-        await _dbHelper.deletePost(post.id!);
-        await _loadThreadData(); // Reload to update reply count
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Reply ${post.formattedId} deleted successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error deleting reply: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+    if (!confirmed) return;
+
+    try {
+      final resp = await http.post(Uri.parse('${baseUrl}reply_delete.php'), body: {'id': replyId.toString()});
+      final data = json.decode(resp.body);
+      if (data['success'] == true) {
+        _loadThread();
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Reply deleted successfully'),
+          backgroundColor: Colors.green,
+        ));
+      } else {
+        throw Exception(data['error'] ?? 'Delete failed');
       }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error deleting reply: $e'), backgroundColor: Colors.red));
     }
+  }
+
+  String _formatTime(DateTime dt) {
+    final now = DateTime.now();
+    final diff = now.difference(dt);
+    if (diff.inDays > 0) return '${diff.inDays}d ago';
+    if (diff.inHours > 0) return '${diff.inHours}h ago';
+    if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
+    return 'Just now';
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
+    if (loading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Loading...')),
+        appBar: AppBar(title: const Text('Loading...'), backgroundColor: const Color(0xFFC0C0C0)),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
-    if (_thread == null) {
+    if (error || thread == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Thread Not Found')),
-        body: const Center(child: Text('Thread not found')),
+        appBar: AppBar(title: const Text('Error'), backgroundColor: const Color(0xFFC0C0C0)),
+        body: const Center(child: Text('Failed to load thread.')),
       );
     }
 
+    final small = ResponsiveHelper.isSmallScreen(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Moderator: ${_thread!.title}',
-          style: GoogleFonts.vt323(),
-        ),
+        title: Text(thread!.title, style: GoogleFonts.vt323(fontSize: 20)),
         backgroundColor: const Color(0xFFC0C0C0),
       ),
       body: Column(
         children: [
-          // Moderator Notice
+          // Thread display
           Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(8),
-            decoration: const BoxDecoration(
-              color: Color(0xFFFFE6E6),
-              border: Border(bottom: BorderSide(color: Colors.red, width: 1)),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.admin_panel_settings, size: 16, color: Colors.red),
-                const SizedBox(width: 8),
-                Text(
-                  'MODERATOR MODE - You can delete individual replies',
-                  style: GoogleFonts.vt323(fontSize: 14, color: Colors.red),
-                ),
-              ],
-            ),
-          ),
-          // Original thread post
-          Container(
-            width: double.infinity,
-            constraints: const BoxConstraints(maxHeight: 300),
+            padding: ResponsiveHelper.defaultPadding,
+            constraints: BoxConstraints(maxHeight: small ? 250 : 300),
+            decoration: const BoxDecoration(color: Color(0xFFE0E0E0)),
             child: SingleChildScrollView(
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFE0E0E0),
-                  border: Border(
-                    bottom: BorderSide(color: Colors.black, width: 1),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFC0C0C0),
-                            border: Border.all(color: Colors.black, width: 1),
-                          ),
-                          child: Text(
-                            _thread!.board,
-                            style: GoogleFonts.vt323(fontSize: 14),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFDDDD),
-                            border: Border.all(color: Colors.black, width: 1),
-                          ),
-                          child: Text(
-                            _thread!.formattedId,
-                            style: GoogleFonts.vt323(fontSize: 14, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '${_thread!.replies} replies',
-                          style: GoogleFonts.vt323(fontSize: 14, color: Colors.black54),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _thread!.title,
-                      style: GoogleFonts.vt323(fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    if (_thread!.imagePath != null)
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        child: Image.file(
-                          File(_thread!.imagePath!),
-                          height: 200,
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                    ImageboardText(
-                      text: _thread!.content,
-                      fontSize: 16,
-                    ),
-                  ],
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
+                    _pill(thread!.board),
+                    const SizedBox(width: 6),
+                    _pill(thread!.formattedId, color: Colors.redAccent),
+                    const SizedBox(width: 10),
+                    Text('Replies: ${thread!.replies} • ${thread!.createdAt.toLocal()}',
+                        style: GoogleFonts.vt323(fontSize: 12, color: Colors.black54))
+                  ]),
+                  const SizedBox(height: 10),
+                  if (thread!.imagePath != null && thread!.imagePath!.isNotEmpty)
+                    Image.network('http://127.0.0.1:3441/${thread!.imagePath!}',
+                        height: small ? 150 : 200, width: double.infinity, fit: BoxFit.contain),
+                  const SizedBox(height: 10),
+                  Text(thread!.title, style: GoogleFonts.vt323(fontSize: 20, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 6),
+                  ImageboardText(text: thread!.content),
+                ],
               ),
             ),
           ),
-          // Posts list with delete options
+          // Replies list
           Expanded(
             child: ListView.builder(
-              padding: const EdgeInsets.all(8),
-              itemCount: _posts.length,
-              itemBuilder: (context, index) {
-                final post = _posts[index];
-                return _ModeratorPostCard(
-                  post: post,
-                  onDelete: () => _deleteReply(post),
-                );
+              padding: const EdgeInsets.all(10),
+              itemCount: replies.length,
+              itemBuilder: (_, i) {
+                final reply = replies[i];
+                return _replyItem(reply);
               },
             ),
           ),
@@ -213,217 +180,54 @@ class _ModeratorThreadViewScreenState extends State<ModeratorThreadViewScreen> {
       ),
     );
   }
-}
 
-class _ModeratorPostCard extends StatelessWidget {
-  final Post post;
-  final VoidCallback onDelete;
-
-  const _ModeratorPostCard({required this.post, required this.onDelete});
-
-  String _formatTime(DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
-
-    if (difference.inDays > 0) {
-      return '${difference.inDays}d ago';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours}h ago';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes}m ago';
-    } else {
-      return 'Just now';
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _pill(String text, {Color color = const Color(0xFFC0C0C0)}) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: Colors.black, width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Post header with ID, timestamp, and delete button
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFC0C0C0),
-                  border: Border.all(color: Colors.black, width: 1),
-                ),
-                child: Text(
-                  post.formattedId,
-                  style: GoogleFonts.vt323(fontSize: 12, fontWeight: FontWeight.bold),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                _formatTime(post.createdAt),
-                style: GoogleFonts.vt323(fontSize: 12, color: Colors.black54),
-              ),
-              const Spacer(),
-              // Delete reply button
-              retro.RetroButton(
-                onTap: onDelete,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.delete, size: 14, color: Colors.red),
-                    const SizedBox(width: 4),
-                    Text(
-                      'DELETE',
-                      style: GoogleFonts.vt323(fontSize: 12, color: Colors.red),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          // Post image if available
-          if (post.imagePath != null && post.imagePath!.isNotEmpty)
-            Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              constraints: const BoxConstraints(maxHeight: 200),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: Image.file(
-                  File(post.imagePath!),
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      height: 100,
-                      color: const Color(0xFF9EC1C1),
-                      child: Center(
-                        child: Text(
-                          'Image Error',
-                          style: GoogleFonts.vt323(fontSize: 14, color: Colors.black54),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-          // Post content with formatting
-          if (post.content.isNotEmpty)
-            ImageboardText(
-              text: post.content,
-              fontSize: 16,
-            ),
-        ],
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(color: color, border: Border.all(color: Colors.black)),
+      child: Text(text, style: GoogleFonts.vt323(fontSize: 12, fontWeight: FontWeight.bold)),
     );
   }
-}
 
-class _DeleteReplyConfirmationDialog extends StatelessWidget {
-  final Post post;
-
-  const _DeleteReplyConfirmationDialog({required this.post});
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: const Color(0xFFE0E0E0),
-      shape: const RoundedRectangleBorder(
-        side: BorderSide(color: Colors.black, width: 2),
-      ),
-      title: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: const Color(0xFFC0C0C0),
-          border: Border.all(color: Colors.black, width: 1),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.warning, color: Colors.red),
-            const SizedBox(width: 8),
-            Text(
-              'CONFIRM DELETE REPLY',
-              style: GoogleFonts.vt323(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-      ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
+  Widget _replyItem(Post reply) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(border: Border.all(color: Colors.black), color: Colors.white),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Are you sure you want to delete this reply?',
-            style: GoogleFonts.vt323(fontSize: 16),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF0F0F0),
-              border: Border.all(color: Colors.black, width: 1),
+          _pill(reply.formattedId),
+          const SizedBox(width: 8),
+          if (reply.imagePath != null && reply.imagePath!.isNotEmpty)
+            Container(
+              width: 50,
+              height: 50,
+              margin: const EdgeInsets.only(right: 8),
+              decoration: BoxDecoration(
+                  border: Border.all(color: Colors.black),
+                  image: DecorationImage(
+                      image: NetworkImage('http://127.0.0.1:3441/${reply.imagePath!}'),
+                      fit: BoxFit.cover)),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Reply ID: ${post.formattedId}',
-                  style: GoogleFonts.vt323(fontSize: 14, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Content Preview:',
-                  style: GoogleFonts.vt323(fontSize: 14, fontWeight: FontWeight.bold),
-                ),
-                Container(
-                  constraints: const BoxConstraints(maxHeight: 60),
-                  child: ImageboardText(
-                    text: post.content.length > 100 
-                        ? '${post.content.substring(0, 100)}...' 
-                        : post.content,
-                    fontSize: 12,
-                    defaultColor: Colors.black87,
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(_formatTime(reply.createdAt), style: GoogleFonts.vt323(fontSize: 12, color: Colors.black54)),
+              const SizedBox(height: 6),
+              ImageboardText(text: reply.content),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  retro.RetroButton(
+                    onTap: () => _deleteReply(reply.id),
+                    child: const Text('Delete', style: TextStyle(color: Colors.red)),
                   ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFDDDD),
-              border: Border.all(color: Colors.red, width: 1),
-            ),
-            child: Text(
-              'This action cannot be undone!',
-              style: GoogleFonts.vt323(fontSize: 12, color: Colors.red),
-            ),
-          ),
+                ],
+              )
+            ]),
+          )
         ],
       ),
-      actions: [
-        retro.RetroButton(
-          onTap: () => Navigator.of(context).pop(false),
-          child: Text(
-            'CANCEL',
-            style: GoogleFonts.vt323(fontSize: 14),
-          ),
-        ),
-        const SizedBox(width: 8),
-        retro.RetroButton(
-          onTap: () => Navigator.of(context).pop(true),
-          child: Text(
-            'DELETE REPLY',
-            style: GoogleFonts.vt323(fontSize: 14, color: Colors.red),
-          ),
-        ),
-      ],
     );
   }
 }

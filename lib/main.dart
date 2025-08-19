@@ -1,28 +1,37 @@
-// main.dart
+// lib/main.dart
+
 import 'package:flutter/material.dart';
-import 'database/database_helper.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'screens/board_list_screen.dart';
 
 void main() {
-  // Initialize database helper for cross-platform support
-  DatabaseHelper.initialize();
-
-  runApp(const MyApp());
+  runApp(const NeoBoardApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class NeoBoardApp extends StatelessWidget {
+  const NeoBoardApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'neoboards',
+      title: 'NeoBoard',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.grey,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
+        scaffoldBackgroundColor: const Color(0xFFE0E0E0),
+        primaryColor: const Color(0xFFC0C0C0),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFFC0C0C0),
+          foregroundColor: Colors.black,
+          elevation: 0,
+        ),
+        textTheme: GoogleFonts.vt323TextTheme(
+          Theme.of(context).textTheme.apply(
+                bodyColor: Colors.black,
+                displayColor: Colors.black,
+              ),
+        ),
       ),
       home: const BoardListScreen(),
-      debugShowCheckedModeBanner: false,
     );
   }
 }

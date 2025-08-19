@@ -1,54 +1,62 @@
-// utils/responsive_helper.dart
+// lib/utils/responsive_helper.dart
+
 import 'package:flutter/material.dart';
 
 class ResponsiveHelper {
-  static double getScreenWidth(BuildContext context) {
-    return MediaQuery.of(context).size.width;
+  /// Returns a responsive font size based on screen width.
+  /// [baseSize] is the default font size for medium screens.
+  static double getFontSize(BuildContext context, [double baseSize = 16]) {
+    final width = MediaQuery.of(context).size.width;
+    if (width < 350) return baseSize * 0.85;  // very small phones
+    if (width < 450) return baseSize * 0.95;  // small phones
+    if (width < 600) return baseSize;         // medium phones
+    if (width < 900) return baseSize * 1.05;  // large phones / small tablets
+    return baseSize * 1.15;                    // tablets and above
   }
 
-  static double getScreenHeight(BuildContext context) {
-    return MediaQuery.of(context).size.height;
+  /// Returns responsive horizontal padding.
+  /// Default is 16 on medium screens, adjusted on small and large.
+  static EdgeInsets get defaultPadding {
+    return const EdgeInsets.symmetric(horizontal: 16, vertical: 8);
   }
 
+  /// Returns responsive spacing based on screen width.
+  /// Default spacing value can be adjusted optionally.
+  static double getResponsiveSpacing(BuildContext context, [double baseSpacing = 8]) {
+    final width = MediaQuery.of(context).size.width;
+    if (width < 350) return baseSpacing * 0.5;
+    if (width < 450) return baseSpacing * 0.75;
+    if (width < 600) return baseSpacing;
+    if (width < 900) return baseSpacing * 1.25;
+    return baseSpacing * 1.5;
+  }
+
+  /// Boolean to detect if the screen is considered small (mobile phone).
   static bool isSmallScreen(BuildContext context) {
-    return getScreenWidth(context) < 600;
+    return MediaQuery.of(context).size.width < 500;
   }
 
+  /// Boolean to detect if the screen is considered medium (large phone or small tablet).
   static bool isMediumScreen(BuildContext context) {
-    return getScreenWidth(context) >= 600 && getScreenWidth(context) < 1200;
+    final width = MediaQuery.of(context).size.width;
+    return width >= 500 && width < 900;
   }
 
+  /// Boolean to detect if the screen is large (tablet or desktop).
   static bool isLargeScreen(BuildContext context) {
-    return getScreenWidth(context) >= 1200;
+    return MediaQuery.of(context).size.width >= 900;
   }
+  static EdgeInsets getResponsivePadding(BuildContext context, [double horizontal = 16, double vertical = 8]) {
+  double width = MediaQuery.of(context).size.width;
+  if (width < 350) {
+    return EdgeInsets.symmetric(horizontal: horizontal * 0.5, vertical: vertical * 0.5);
+  } else if (width < 450) {
+    return EdgeInsets.symmetric(horizontal: horizontal * 0.75, vertical: vertical * 0.75);
+  } else if (width < 900) {
+    return EdgeInsets.symmetric(horizontal: horizontal, vertical: vertical);
+  } else {
+    return EdgeInsets.symmetric(horizontal: horizontal * 1.5, vertical: vertical * 1.25);
+  }
+}
 
-  // Responsive font sizes
-  static double getResponsiveFontSize(BuildContext context, double baseSize) {
-    double screenWidth = getScreenWidth(context);
-    if (screenWidth < 360) return baseSize * 0.8;
-    if (screenWidth < 600) return baseSize * 0.9;
-    return baseSize;
-  }
-
-  // Responsive padding
-  static EdgeInsets getResponsivePadding(BuildContext context) {
-    if (isSmallScreen(context)) return const EdgeInsets.all(8);
-    if (isMediumScreen(context)) return const EdgeInsets.all(12);
-    return const EdgeInsets.all(16);
-  }
-
-  // Responsive spacing
-  static double getResponsiveSpacing(BuildContext context, double baseSpacing) {
-    if (isSmallScreen(context)) return baseSpacing * 0.75;
-    return baseSpacing;
-  }
-
-  // Responsive grid count
-  static int getGridCount(BuildContext context, double screenWidth) {
-    if (screenWidth < 400) return 1;
-    if (screenWidth < 600) return 2;
-    if (screenWidth < 900) return 3;
-    if (screenWidth < 1200) return 4;
-    return 5;
-  }
 }

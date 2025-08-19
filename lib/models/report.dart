@@ -1,12 +1,13 @@
-// models/report.dart
+// lib/models/report.dart
+
 class Report {
   final int? id;
   final String reportType; // 'thread' or 'reply'
-  final int targetId; // ID of the thread or post being reported
-  final String reason; // Predefined reason category
-  final String? description; // Optional additional description
+  final int targetId;
+  final String reason;
+  final String? description;
+  final String status;  // 'pending', 'reviewed', 'dismissed'
   final DateTime createdAt;
-  final String status; // 'pending', 'reviewed', 'dismissed'
 
   Report({
     this.id,
@@ -14,51 +15,31 @@ class Report {
     required this.targetId,
     required this.reason,
     this.description,
-    DateTime? createdAt,
-    this.status = 'pending',
-  }) : createdAt = createdAt ?? DateTime.now();
+    required this.status,
+    required this.createdAt,
+  });
 
-  Map<String, dynamic> toMap() {
+  factory Report.fromJson(Map<String, dynamic> json) {
+    return Report(
+      id: json['id'] != null ? int.parse(json['id'].toString()) : null,
+      reportType: json['report_type'] ?? '',
+      targetId: int.parse(json['target_id'].toString()),
+      reason: json['reason'] ?? '',
+      description: json['description'],
+      status: json['status'] ?? 'pending',
+      createdAt: DateTime.parse(json['created_at']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'reportType': reportType,
-      'targetId': targetId,
+      'report_type': reportType,
+      'target_id': targetId,
       'reason': reason,
       'description': description,
-      'createdAt': createdAt.millisecondsSinceEpoch,
       'status': status,
+      'created_at': createdAt.toIso8601String(),
     };
-  }
-
-  factory Report.fromMap(Map<String, dynamic> map) {
-    return Report(
-      id: map['id'],
-      reportType: map['reportType'],
-      targetId: map['targetId'],
-      reason: map['reason'],
-      description: map['description'],
-      createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt']),
-      status: map['status'] ?? 'pending',
-    );
-  }
-
-  Report copyWith({
-    int? id,
-    String? reportType,
-    int? targetId,
-    String? reason,
-    String? description,
-    DateTime? createdAt,
-    String? status,
-  }) {
-    return Report(
-      id: id ?? this.id,
-      reportType: reportType ?? this.reportType,
-      targetId: targetId ?? this.targetId,
-      reason: reason ?? this.reason,
-      description: description ?? this.description,
-      createdAt: createdAt ?? this.createdAt,
-      status: status ?? this.status,
-    );
   }
 }

@@ -1,141 +1,144 @@
+// lib/widgets/retro_header.dart
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class RetroHeader extends StatelessWidget implements PreferredSizeWidget {
-final String title;
-final List<String> boards;
-final void Function(String board) onBoardTap;
-final void Function(String query)? onSearch;
+  final String title;
+  final List<String> boards;
+  final String? selectedBoard;
+  final ValueChanged<String>? onBoardTap;
+  final ValueChanged<String>? onSearch;
+  final bool showHome;
+  final bool showSearch;
 
-const RetroHeader({
-super.key,
-required this.title,
-required this.boards,
-required this.onBoardTap,
-this.onSearch,
-});
+  const RetroHeader({
+    super.key,
+    required this.title,
+    required this.boards,
+    this.selectedBoard,
+    this.onBoardTap,
+    this.onSearch,
+    this.showHome = true,
+    this.showSearch = true,
+  });
 
-@override
-Size get preferredSize => const Size.fromHeight(96);
+  @override
+  Size get preferredSize => const Size.fromHeight(120); // Increased height for overflow fix
 
-@override
-Widget build(BuildContext context) {
-final silver = const Color(0xFFC0C0C0);
-final black = Colors.black;
-return AppBar(
-  elevation: 0,
-  backgroundColor: silver,
-  titleSpacing: 12,
-  title: Text(
-    title,
-    style: GoogleFonts.vt323(fontSize: 24, color: black),
-  ),
-  actions: [
-    IconButton(
-      icon: const Icon(Icons.info_outline, color: Colors.black),
-      tooltip: 'About',
-      onPressed: () {},
-    ),
-  ],
-  bottom: PreferredSize(
-    preferredSize: const Size.fromHeight(56),
-    child: Container(
-      height: 56,
-      decoration: const BoxDecoration(
-        border: Border(
-          top: BorderSide(color: Colors.black26, width: 1),
-          bottom: BorderSide(color: Colors.black38, width: 1),
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFFC0C0C0),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  if (showHome)
+                    IconButton(
+                      icon: const Icon(Icons.home),
+                      tooltip: 'Home',
+                      onPressed: () => onBoardTap?.call('/'),
+                    ),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: GoogleFonts.vt323(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.5,
+                        color: Colors.black,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (showSearch)
+                    IconButton(
+                      icon: const Icon(Icons.search),
+                      tooltip: 'Search',
+                      onPressed: () async {
+                        if (onSearch != null) {
+                          final query = await _showSearchDialog(context);
+                          if (query != null && query.trim().isNotEmpty) {
+                            onSearch!(query.trim());
+                          }
+                        }
+                      },
+                    ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              SizedBox(
+                height: 40,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: boards.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                  itemBuilder: (ctx, index) {
+                    final board = boards[index];
+                    final selected = board == selectedBoard;
+                    return GestureDetector(
+                      onTap: () => onBoardTap?.call(board),
+                      child: Container(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: selected ? Colors.black : Colors.white,
+                          border: Border.all(color: Colors.black),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          board,
+                          style: GoogleFonts.vt323(
+                            fontSize: 16,
+                            color: selected ? Colors.white : Colors.black,
+                            fontWeight:
+                                selected ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Row(
-        children: [
-          RetroButtonBar(items: boards, onPressed: onBoardTap),
-          const Spacer(),
-          SizedBox(
-            width: 240,
-            child: RetroSearchField(onSubmitted: onSearch),
+    );
+  }
+
+  Future<String?> _showSearchDialog(BuildContext context) async {
+    String? query;
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) {
+        final controller = TextEditingController();
+        return AlertDialog(
+          title: const Text('Search'),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            decoration: const InputDecoration(hintText: 'Enter search query'),
+            onChanged: (val) => query = val,
+            onSubmitted: (val) => Navigator.of(ctx).pop(val),
           ),
-        ],
-      ),
-    ),
-  ),
-);
-}
-}
-
-class RetroButtonBar extends StatelessWidget {
-final List<String> items;
-final void Function(String) onPressed;
-const RetroButtonBar({super.key, required this.items, required this.onPressed});
-
-@override
-Widget build(BuildContext context) {
-return Wrap(
-spacing: 8,
-children: items
-.map((label) => RetroButton(
-label: label,
-onPressed: () => onPressed(label),
-))
-.toList(),
-);
-}
-}
-
-class RetroButton extends StatelessWidget {
-final String label;
-final VoidCallback onPressed;
-const RetroButton({super.key, required this.label, required this.onPressed});
-
-@override
-Widget build(BuildContext context) {
-return InkWell(
-onTap: onPressed,
-borderRadius: BorderRadius.zero,
-child: Container(
-padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-decoration: BoxDecoration(
-color: const Color(0xFFE0E0E0),
-border: Border.all(color: Colors.black, width: 1),
-),
-child: Text(
-label,
-style: GoogleFonts.vt323(fontSize: 18, color: Colors.black),
-),
-),
-);
-}
-}
-
-class RetroSearchField extends StatelessWidget {
-final void Function(String)? onSubmitted;
-const RetroSearchField({super.key, this.onSubmitted});
-
-@override
-Widget build(BuildContext context) {
-return TextField(
-style: GoogleFonts.vt323(fontSize: 18, color: Colors.black),
-cursorColor: Colors.black,
-decoration: InputDecoration(
-isDense: true,
-hintText: 'Search',
-hintStyle: GoogleFonts.vt323(fontSize: 18, color: Colors.black54),
-contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-filled: true,
-fillColor: const Color(0xFFE0E0E0),
-enabledBorder: const OutlineInputBorder(
-borderSide: BorderSide(color: Colors.black, width: 1),
-),
-focusedBorder: const OutlineInputBorder(
-borderSide: BorderSide(color: Colors.black, width: 2),
-),
-),
-onSubmitted: (q) {
-final t = q.trim();
-if (onSubmitted != null && t.isNotEmpty) onSubmitted!(t);
-},
-textInputAction: TextInputAction.search,
-);
-}
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(ctx).pop(controller.text),
+              child: const Text('Search'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 }

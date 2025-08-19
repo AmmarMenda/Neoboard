@@ -1,14 +1,20 @@
-// screens/moderator_thread_management_screen.dart
+// lib/screens/moderator_thread_management_screen.dart
+
 import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../widgets/retro_button.dart' as retro;
-import '../database/database_helper.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
 import '../models/thread.dart';
 import '../models/post.dart';
 import '../widgets/imageboard_text.dart';
+import '../widgets/retro_button.dart' as retro;
 import '../utils/responsive_helper.dart';
 import 'moderator_thread_view_screen.dart';
+import '../widgets/delete_thread_dialog.dart';
 
 class ModeratorThreadManagementScreen extends StatefulWidget {
   const ModeratorThreadManagementScreen({super.key});
@@ -20,71 +26,116 @@ class ModeratorThreadManagementScreen extends StatefulWidget {
 
 class _ModeratorThreadManagementScreenState
     extends State<ModeratorThreadManagementScreen> {
-  final _db = DatabaseHelper();
+  static const String baseUrl = 'http://127.0.0.1:3441/';
 
-  final _boards = ['All', '/b/', '/g/', '/v/', '/a/'];
-  String _selectedBoard = 'All';
+  final List<String> boards = ['All', '/b/', '/g/', '/v/', '/a/'];
+  String selectedBoard = 'All';
 
-  bool _loading = true;
-  List<Thread> _threads = [];
-  final Map<int, List<Post>> _replies = {};
+  List<Thread> threads = [];
+  Map<int, List<Post>> replies = {};
+  bool isLoading = false;
+  bool hasError = false;
 
   @override
   void initState() {
     super.initState();
-    _refresh();
+    fetchThreads();
   }
 
-  Future<void> _refresh() async {
-    setState(() => _loading = true);
+  Future<void> fetchThreads() async {
+    setState(() {
+      isLoading = true;
+      hasError = false;
+    });
 
     try {
-      _threads = _selectedBoard == 'All'
-          ? await _db.getAllThreads()
-          : await _db.getThreadsByBoard(_selectedBoard);
+      final url = selectedBoard == 'All'
+          ? Uri.parse('${baseUrl}threads.php')
+          : Uri.parse('${baseUrl}threads.php?board=$selectedBoard');
 
-      _replies.clear();
-      for (final t in _threads) {
-        _replies[t.id!] = await _db.getPostsByThread(t.id!);
+      final response = await http.get(url);
+      if (response.statusCode != 200) {
+        throw Exception('Failed to load threads');
       }
-    } finally {
-      if (mounted) setState(() => _loading = false);
+
+      final List data = json.decode(response.body);
+      final fetchedThreads = data.map((e) => Thread.fromJson(e)).toList();
+
+      Map<int, List<Post>> tempReplies = {};
+
+      for (var thread in fetchedThreads) {
+        final replyResponse = await http
+            .get(Uri.parse('${baseUrl}replies.php?thread_id=${thread.id}'));
+
+        final List replyData = replyResponse.statusCode == 200
+            ? json.decode(replyResponse.body)
+            : [];
+        tempReplies[thread.id] =
+            replyData.map<Post>((e) => Post.fromJson(e)).toList();
+      }
+
+      setState(() {
+        threads = fetchedThreads;
+        replies = tempReplies;
+        isLoading = false;
+      });
+    } catch (e) {
+      if (kDebugMode) print('Error fetching threads: $e');
+      setState(() {
+        isLoading = false;
+        hasError = true;
+      });
     }
   }
 
-  Future<void> _deleteThread(Thread t) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (_) => _DeleteThreadDialog(thread: t),
-    );
-    if (ok == true) {
-      await _db.deleteThread(t.id!);
-      _refresh();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Thread deleted'), backgroundColor: Colors.green),
-        );
+  Future<void> deleteThread(int threadId) async {
+    bool confirm = await showDialog(
+          context: context,
+          builder: (context) => DeleteThreadDialog(threadId: threadId),
+        ) ??
+        false;
+
+    if (!confirm) return;
+
+    try {
+      final response =
+          await http.post(Uri.parse('${baseUrl}thread_delete.php'), body: {
+        'id': threadId.toString(),
+      });
+
+      final data = json.decode(response.body);
+      if (data['success'] == true) {
+        fetchThreads();
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Thread deleted successfully'),
+            backgroundColor: Colors.green));
+      } else {
+        throw Exception(data['error'] ?? 'Unknown error deleting thread');
       }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Error deleting thread: $e'),
+          backgroundColor: Colors.red));
     }
   }
 
-  void _openThread(Thread t) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => ModeratorThreadViewScreen(threadId: t.id!)),
-    ).then((_) => _refresh());
+  void openThread(int threadId) {
+    Navigator.of(context)
+        .push(MaterialPageRoute(
+            builder: (_) => ModeratorThreadViewScreen(threadId: threadId)))
+        .then((_) => fetchThreads());
   }
 
   @override
   Widget build(BuildContext context) {
-    final small = ResponsiveHelper.isSmallScreen(context);
+    final bool smallScreen = ResponsiveHelper.isSmallScreen(context);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Thread Management',
+          'Moderator Thread Management',
           style: GoogleFonts.vt323(
-            fontSize: ResponsiveHelper.getResponsiveFontSize(context, 20),
+            fontSize: ResponsiveHelper.getFontSize(context, 20),
           ),
         ),
         backgroundColor: const Color(0xFFC0C0C0),
@@ -93,9 +144,8 @@ class _ModeratorThreadManagementScreenState
         color: const Color(0xFFE0E0E0),
         child: Column(
           children: [
-            // ── header & filter ───────────────────────────────────────────────
             Container(
-              padding: ResponsiveHelper.getResponsivePadding(context),
+              padding: ResponsiveHelper.defaultPadding,
               decoration: const BoxDecoration(
                 color: Color(0xFFC0C0C0),
                 border: Border(bottom: BorderSide(color: Colors.black)),
@@ -103,144 +153,128 @@ class _ModeratorThreadManagementScreenState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.manage_search),
-                      SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 8)),
-                      Text(
-                        'THREAD & REPLY MANAGEMENT',
+                  Row(children: [
+                    const Icon(Icons.list_alt),
+                    const SizedBox(width: 6),
+                    Text('Filter by board:',
                         style: GoogleFonts.vt323(
-                          fontSize: ResponsiveHelper.getResponsiveFontSize(context, 20),
-                          fontWeight: FontWeight.bold,
+                          fontSize: ResponsiveHelper.getFontSize(context, 14),
+                        )),
+                    const SizedBox(width: 12),
+                    DropdownButton<String>(
+                      value: selectedBoard,
+                      items: boards
+                          .map((b) => DropdownMenuItem(
+                              value: b,
+                              child: Text(
+                                b,
+                                style: GoogleFonts.vt323(),
+                              )))
+                          .toList(),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() {
+                            selectedBoard = val;
+                          });
+                          fetchThreads();
+                        }
+                      },
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                          border: Border.all(color: Colors.black)),
+                      child: Text(
+                        'Threads: ${threads.length}',
+                        style: GoogleFonts.vt323(
+                          fontSize: ResponsiveHelper.getFontSize(context, 14),
                         ),
                       ),
-                    ],
-                  ),
-                  SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 12)),
-                  small
-                      ? Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Filter by board:',
-                                style: GoogleFonts.vt323(
-                                  fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14),
-                                )),
-                            SizedBox(height: 6),
-                            _boardDropdown(fullWidth: true),
-                            SizedBox(height: 8),
-                            Text('${_threads.length} threads',
-                                style: GoogleFonts.vt323(
-                                  fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14),
-                                  color: Colors.black54,
-                                )),
-                          ],
-                        )
-                      : Row(
-                          children: [
-                            Text('Filter by board:',
-                                style: GoogleFonts.vt323(fontSize: 14)),
-                            const SizedBox(width: 12),
-                            _boardDropdown(),
-                            const Spacer(),
-                            Text('${_threads.length} threads',
-                                style: GoogleFonts.vt323(fontSize: 14, color: Colors.black54)),
-                          ],
-                        ),
+                    ),
+                  ]),
                 ],
               ),
             ),
-            // ── list ───────────────────────────────────────────────────────────
             Expanded(
-              child: _loading
+              child: isLoading
                   ? const Center(child: CircularProgressIndicator())
-                  : _threads.isEmpty
+                  : hasError
                       ? Center(
-                          child: Text(
-                            'No threads found',
-                            style: GoogleFonts.vt323(
-                              fontSize: ResponsiveHelper.getResponsiveFontSize(context, 20),
-                              color: Colors.black54,
-                            ),
-                          ),
-                        )
+                          child: Text('Failed to load threads',
+                              style: GoogleFonts.vt323(
+                                  fontSize:
+                                      ResponsiveHelper.getFontSize(context, 18),
+                                  color: Colors.red)))
                       : ListView.builder(
-                          padding: ResponsiveHelper.getResponsivePadding(context),
-                          itemCount: _threads.length,
-                          itemBuilder: (_, i) => _ThreadCard(
-                            thread: _threads[i],
-                            replies: _replies[_threads[i].id] ?? const [],
-                            onOpen: () => _openThread(_threads[i]),
-                            onDelete: () => _deleteThread(_threads[i]),
+                          padding: const EdgeInsets.all(10),
+                          itemCount: threads.length,
+                          itemBuilder: (context, i) => ModeratorThreadCard(
+                            thread: threads[i],
+                            replies: replies[threads[i].id] ?? [],
+                            onOpen: () => openThread(threads[i].id),
+                            onDelete: () => deleteThread(threads[i].id),
                           ),
                         ),
-            ),
+            )
           ],
         ),
       ),
     );
   }
-
-  Widget _boardDropdown({bool fullWidth = false}) {
-    final drop = DropdownButtonHideUnderline(
-      child: DropdownButton<String>(
-        value: _selectedBoard,
-        isExpanded: fullWidth,
-        style: GoogleFonts.vt323(fontSize: 14, color: Colors.black),
-        items: _boards
-            .map((b) => DropdownMenuItem(value: b, child: Text(b)))
-            .toList(),
-        onChanged: (v) {
-          if (v != null) {
-            setState(() => _selectedBoard = v);
-            _refresh();
-          }
-        },
+}
+Widget _pill(String text, {Color color = const Color(0xFFC0C0C0)}) {
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+    decoration: BoxDecoration(
+      color: color,
+      border: Border.all(color: Colors.black),
+      borderRadius: BorderRadius.circular(4),
+    ),
+    child: Text(
+      text,
+      style: const TextStyle(
+        fontWeight: FontWeight.bold,
+        fontSize: 12,
+        color: Colors.black,
       ),
-    );
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: Colors.black),
-      ),
-      child: drop,
-    );
-  }
+    ),
+  );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Thread card
-// ─────────────────────────────────────────────────────────────────────────────
-class _ThreadCard extends StatefulWidget {
+
+
+class ModeratorThreadCard extends StatefulWidget {
   final Thread thread;
   final List<Post> replies;
-  final VoidCallback onDelete;
   final VoidCallback onOpen;
+  final VoidCallback onDelete;
 
-  const _ThreadCard({
+  const ModeratorThreadCard({
+    super.key,
     required this.thread,
     required this.replies,
-    required this.onDelete,
     required this.onOpen,
+    required this.onDelete,
   });
 
   @override
-  State<_ThreadCard> createState() => _ThreadCardState();
+  State<ModeratorThreadCard> createState() => _ModeratorThreadCardState();
 }
 
-class _ThreadCardState extends State<_ThreadCard> {
-  bool _showReplies = false;
+class _ModeratorThreadCardState extends State<ModeratorThreadCard> {
+  bool showReplies = false;
 
-  String _fmt(DateTime d) =>
-      '${d.day}/${d.month}/${d.year} ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+  String formatDate(DateTime dt) =>
+      '${dt.day}/${dt.month}/${dt.year} ${dt.hour}:${dt.minute.toString().padLeft(2, "0")}';
 
   @override
   Widget build(BuildContext context) {
-    final small = ResponsiveHelper.isSmallScreen(context);
+    final bool smallScreen = ResponsiveHelper.isSmallScreen(context);
 
     return Container(
-      margin: EdgeInsets.only(bottom: ResponsiveHelper.getResponsiveSpacing(context, 12)),
+      margin: const EdgeInsets.symmetric(vertical: 6),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: Colors.black),
@@ -248,317 +282,254 @@ class _ThreadCardState extends State<_ThreadCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── header ────────────────────────────────────────────────────────
+          // Header
           Padding(
-            padding: ResponsiveHelper.getResponsivePadding(context),
+            padding: ResponsiveHelper.defaultPadding,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // info row
+                // Info row
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      _pill(widget.thread.board, const Color(0xFFC0C0C0)),
-                      const SizedBox(width: 8),
-                      _pill(widget.thread.formattedId, const Color(0xFFFFDDDD)),
-                      const SizedBox(width: 8),
-                      Text('${widget.replies.length} replies • ${_fmt(widget.thread.createdAt)}',
+                      _pill(widget.thread.board,color: const Color(0xFFC0C0C0)),
+                      const SizedBox(width: 6),
+                      _pill(widget.thread.formattedId,color: Colors.redAccent),
+                      const SizedBox(width: 10),
+                      Text('Replies: ${widget.replies.length} • ${formatDate(widget.thread.createdAt)}',
                           style: GoogleFonts.vt323(
-                            fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12),
-                            color: Colors.black54,
-                          )),
+                              fontSize: ResponsiveHelper.getFontSize(context, 12),
+                              color: Colors.black54)),
                     ],
                   ),
                 ),
-                SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 8)),
-                // action buttons
-                small ? _buttonsColumn(context) : _buttonsRow(context),
+                const SizedBox(height: 10),
+
+                // Action buttons
+                smallScreen
+                    ? Column(
+                        children: [
+                          if (widget.replies.isNotEmpty)
+                            retro.RetroButton(
+                              onTap: () => setState(() => showReplies = !showReplies),
+                              child: Text(
+                                showReplies ? 'HIDE REPLIES' : 'SHOW REPLIES',
+                                style: GoogleFonts.vt323(fontSize: 12),
+                              ),
+                            ),
+                          if (widget.replies.isNotEmpty)
+                            const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: retro.RetroButton(
+                                  onTap: widget.onOpen,
+                                  child: const Center(child: Text('OPEN')),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: retro.RetroButton(
+                                  onTap: widget.onDelete,
+                                  child: const Center(
+                                    child: Text(
+                                      'DELETE',
+                                      style: TextStyle(color: Colors.red),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      )
+                    : SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            if (widget.replies.isNotEmpty)
+                              retro.RetroButton(
+                                onTap: () => setState(() => showReplies = !showReplies),
+                                child: Text(showReplies ? 'HIDE' : 'SHOW',
+                                    style: GoogleFonts.vt323(fontSize: 12)),
+                              ),
+                            if (widget.replies.isNotEmpty) const SizedBox(width: 10),
+                            retro.RetroButton(
+                              onTap: widget.onOpen,
+                              child: Text('OPEN',
+                                  style: GoogleFonts.vt323(
+                                      fontSize: 12, color: Colors.blue)),
+                            ),
+                            const SizedBox(width: 10),
+                            retro.RetroButton(
+                              onTap: widget.onDelete,
+                              child: Text('DELETE',
+                                  style: GoogleFonts.vt323(
+                                      fontSize: 12, color: Colors.red)),
+                            ),
+                          ],
+                        ),
+                      ),
               ],
             ),
           ),
-          // ── content ───────────────────────────────────────────────────────
+          // Content
           Padding(
-            padding: ResponsiveHelper.getResponsivePadding(context),
-            child: small ? _verticalContent() : _horizontalContent(),
+            padding: ResponsiveHelper.defaultPadding,
+            child: smallScreen
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (widget.thread.imagePath != null)
+                        Image.network(
+                          '127.0.0.1:3441/${widget.thread.imagePath}',
+                          height: 120,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
+                      const SizedBox(height: 8),
+                      Text(widget.thread.title,
+                          style: GoogleFonts.vt323(
+                              fontSize: ResponsiveHelper.getFontSize(context, 16),
+                              fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 6),
+                      ImageboardText(text: widget.thread.content),
+                    ],
+                  )
+                : Row(
+                    children: [
+                      if (widget.thread.imagePath != null)
+                        Container(
+                          width: 80,
+                          height: 80,
+                          margin: const EdgeInsets.only(right: 10),
+                          child: Image.network(
+                            'http://127.0.0.1:3441/${widget.thread.imagePath}',
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(widget.thread.title,
+                                style: GoogleFonts.vt323(
+                                  fontSize:
+                                      ResponsiveHelper.getFontSize(context, 16),
+                                  fontWeight: FontWeight.bold,
+                                )),
+                            const SizedBox(height: 4),
+                            ImageboardText(text: widget.thread.content),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
           ),
-          // ── replies preview ──────────────────────────────────────────────
-          if (_showReplies && widget.replies.isNotEmpty) _RepliesPreview(replies: widget.replies),
+          // Replies preview
+          if (showReplies && widget.replies.isNotEmpty)
+            Container(
+              decoration: const BoxDecoration(
+                color: Color(0xFFF8F8F8),
+                border: Border(top: BorderSide(color: Colors.black12)),
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: ResponsiveHelper.defaultPadding,
+                    decoration: const BoxDecoration(
+                        border: Border(bottom: BorderSide(color: Colors.black12))),
+                    child: Text(
+                      'REPLIES (${widget.replies.length})',
+                      style: GoogleFonts.vt323(
+                          fontWeight: FontWeight.bold,
+                          fontSize: ResponsiveHelper.getFontSize(context, 14)),
+                    ),
+                  ),
+                  ...widget.replies.take(5).map(
+                        (r) => ReplyPreview(reply: r),
+                      ),
+                  if (widget.replies.length > 5)
+                    Padding(
+                      padding: ResponsiveHelper.defaultPadding,
+                      child: Text(
+                          '...and ${widget.replies.length - 5} more',
+                          style: GoogleFonts.vt323(
+                              fontSize: ResponsiveHelper.getFontSize(context, 12),
+                              color: Colors.black54)),
+                    )
+                ],
+              ),
+            ),
         ],
       ),
     );
   }
-
-  // horizontal on >500 px
-  Widget _buttonsRow(BuildContext ctx) => SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            if (widget.replies.isNotEmpty) ...[
-              retro.RetroButton(
-                onTap: () => setState(() => _showReplies = !_showReplies),
-                child: Text(_showReplies ? 'HIDE' : 'SHOW',
-                    style: GoogleFonts.vt323(fontSize: 12)),
-              ),
-              const SizedBox(width: 8),
-            ],
-            retro.RetroButton(
-              onTap: widget.onOpen,
-              child: Row(
-                children: [
-                  const Icon(Icons.open_in_new, size: 14, color: Colors.blue),
-                  const SizedBox(width: 4),
-                  Text('OPEN',
-                      style: GoogleFonts.vt323(fontSize: 12, color: Colors.blue)),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            retro.RetroButton(
-              onTap: widget.onDelete,
-              child: Row(
-                children: [
-                  const Icon(Icons.delete, size: 14, color: Colors.red),
-                  const SizedBox(width: 4),
-                  Text('DELETE',
-                      style: GoogleFonts.vt323(fontSize: 12, color: Colors.red)),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-
-  // stacked vertically on small screens
-  Widget _buttonsColumn(BuildContext ctx) => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (widget.replies.isNotEmpty)
-            retro.RetroButton(
-              onTap: () => setState(() => _showReplies = !_showReplies),
-              child: Text(_showReplies ? 'HIDE REPLIES' : 'SHOW REPLIES',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.vt323(fontSize: 12)),
-            ),
-          if (widget.replies.isNotEmpty)
-            SizedBox(height: ResponsiveHelper.getResponsiveSpacing(ctx, 8)),
-          Row(
-            children: [
-              Expanded(
-                child: retro.RetroButton(
-                  onTap: widget.onOpen,
-                  child: Text('OPEN',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.vt323(fontSize: 12, color: Colors.blue)),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: retro.RetroButton(
-                  onTap: widget.onDelete,
-                  child: Text('DELETE',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.vt323(fontSize: 12, color: Colors.red)),
-                ),
-              ),
-            ],
-          ),
-        ],
-      );
-
-  Widget _verticalContent() => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (widget.thread.imagePath != null)
-            Container(
-              width: double.infinity,
-              height: 120,
-              margin: const EdgeInsets.only(bottom: 8),
-              child: Image.file(File(widget.thread.imagePath!), fit: BoxFit.contain),
-            ),
-          Text(widget.thread.title,
-              style: GoogleFonts.vt323(
-                  fontSize: ResponsiveHelper.getResponsiveFontSize(context, 16),
-                  fontWeight: FontWeight.bold),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis),
-          const SizedBox(height: 4),
-          ImageboardText(
-            text: widget.thread.content,
-            fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14),
-            defaultColor: Colors.black87,
-          ),
-        ],
-      );
-
-  Widget _horizontalContent() => Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // image
-          if (widget.thread.imagePath != null)
-            Container(
-              width: 80,
-              height: 80,
-              margin: const EdgeInsets.only(right: 12),
-              child: Image.file(File(widget.thread.imagePath!), fit: BoxFit.cover),
-            ),
-          // text
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(widget.thread.title,
-                    style: GoogleFonts.vt323(fontSize: 16, fontWeight: FontWeight.bold),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis),
-                const SizedBox(height: 4),
-                ImageboardText(
-                  text: widget.thread.content,
-                  fontSize: 14,
-                  defaultColor: Colors.black87,
-                ),
-              ],
-            ),
-          ),
-        ],
-      );
-
-  Widget _pill(String txt, Color clr) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-        decoration: BoxDecoration(color: clr, border: Border.all(color: Colors.black)),
-        child: Text(txt,
-            style: GoogleFonts.vt323(fontSize: 12, fontWeight: FontWeight.bold)),
-      );
 }
+class ReplyPreview extends StatelessWidget {
+  final Post reply;
+  const ReplyPreview({super.key, required this.reply});
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Replies preview (first 5)
-// ─────────────────────────────────────────────────────────────────────────────
-class _RepliesPreview extends StatelessWidget {
-  final List<Post> replies;
-  const _RepliesPreview({required this.replies});
-
-  String _ago(DateTime t) {
-    final d = DateTime.now().difference(t);
-    if (d.inDays > 0) return '${d.inDays}d ago';
-    if (d.inHours > 0) return '${d.inHours}h ago';
-    if (d.inMinutes > 0) return '${d.inMinutes}m ago';
+  String formatDate(DateTime dt) {
+    final now = DateTime.now();
+    final diff = now.difference(dt);
+    if (diff.inDays > 0) return '${diff.inDays}d ago';
+    if (diff.inHours > 0) return '${diff.inHours}h ago';
+    if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
     return 'Just now';
   }
 
   @override
-  Widget build(BuildContext context) => Column(
+  Widget build(BuildContext context) {
+    final bgColor = reply.id % 2 == 0 ? Colors.white : Colors.grey[100];
+
+    return Container(
+      padding: ResponsiveHelper.defaultPadding,
+      color: bgColor,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: double.infinity,
-            padding: ResponsiveHelper.getResponsivePadding(context),
-            decoration: const BoxDecoration(
-              color: Color(0xFFE8E8E8),
-              border: Border(top: BorderSide(color: Colors.black54)),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+                color: Colors.grey[300], border: Border.all(color: Colors.black)),
+            child: Text(
+              reply.formattedId,
+              style: GoogleFonts.vt323(fontSize: 12),
             ),
-            child: Text('REPLIES (${replies.length})',
-                style: GoogleFonts.vt323(
-                    fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14),
-                    fontWeight: FontWeight.bold)),
           ),
-          ...replies.take(5).map((p) => Container(
-                padding: ResponsiveHelper.getResponsivePadding(context),
-                decoration:
-                    const BoxDecoration(border: Border(top: BorderSide(color: Colors.black12))),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _idBox(p.formattedId),
-                    const SizedBox(width: 8),
-                    if (p.imagePath != null)
-                      Container(
-                        width: 32,
-                        height: 32,
-                        margin: const EdgeInsets.only(right: 8),
-                        child: Image.file(File(p.imagePath!), fit: BoxFit.cover),
-                      ),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(_ago(p.createdAt),
-                              style: GoogleFonts.vt323(
-                                  fontSize: 10, color: Colors.black54)),
-                          const SizedBox(height: 2),
-                          ImageboardText(
-                            text: p.content,
-                            fontSize: 12,
-                            defaultColor: Colors.black87,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+          const SizedBox(width: 10),
+          if (reply.imagePath != null)
+            Container(
+              width: 50,
+              height: 50,
+              margin: const EdgeInsets.only(right: 10),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.black),
+                image: DecorationImage(
+                  image: NetworkImage('http://127.0.0.1:3441/${reply.imagePath}'),
+                  fit: BoxFit.cover,
                 ),
-              )),
-          if (replies.length > 5)
-            Padding(
-              padding: ResponsiveHelper.getResponsivePadding(context),
-              child: Text('... and ${replies.length - 5} more',
-                  style: GoogleFonts.vt323(fontSize: 12, color: Colors.black54)),
+              ),
             ),
-        ],
-      );
-
-  Widget _idBox(String id) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-        decoration: BoxDecoration(
-          color: const Color(0xFFDDDDDD),
-          border: Border.all(color: Colors.black54),
-        ),
-        child: Text(id, style: GoogleFonts.vt323(fontSize: 10)),
-      );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Delete confirmation dialog
-// ─────────────────────────────────────────────────────────────────────────────
-class _DeleteThreadDialog extends StatelessWidget {
-  final Thread thread;
-  const _DeleteThreadDialog({required this.thread});
-
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-        backgroundColor: const Color(0xFFE0E0E0),
-        shape: const RoundedRectangleBorder(
-            side: BorderSide(color: Colors.black, width: 2)),
-        title: Row(
-          children: [
-            const Icon(Icons.warning, color: Colors.red),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text('DELETE THREAD',
-                  style: GoogleFonts.vt323(
-                      fontSize: ResponsiveHelper.getResponsiveFontSize(context, 20),
-                      fontWeight: FontWeight.bold)),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  formatDate(reply.createdAt),
+                  style:
+                      GoogleFonts.vt323(fontSize: 12, color: Colors.black54),
+                ),
+                const SizedBox(height: 6),
+                ImageboardText(text: reply.content),
+              ],
             ),
-          ],
-        ),
-        content: Text(
-          'Delete "${thread.title}"?\nThis cannot be undone.',
-          style: GoogleFonts.vt323(
-              fontSize: ResponsiveHelper.getResponsiveFontSize(context, 16)),
-        ),
-        actions: [
-          retro.RetroButton(
-            onTap: () => Navigator.pop(context, false),
-            child: Text('CANCEL',
-                style: GoogleFonts.vt323(
-                    fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14))),
-          ),
-          const SizedBox(width: 8),
-          retro.RetroButton(
-            onTap: () => Navigator.pop(context, true),
-            child: Text('DELETE',
-                style: GoogleFonts.vt323(
-                    fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14),
-                    color: Colors.red)),
-          ),
+          )
         ],
-      );
+      ),
+    );
+  }
 }
