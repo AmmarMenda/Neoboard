@@ -2,12 +2,12 @@
 It is my University Project<br>
 these are screenshots from linux native build
 <br>
-<img width="1366" height="768" alt="2025-08-11-25-1755496515-scrot" src="https://github.com/user-attachments/assets/0ccd7e39-af1a-46ef-b1da-1a625ece4177" />
+<img width="1346" height="729" alt="Screenshot 2025-08-19 at 15-41-13 NeoBoard" src="https://github.com/user-attachments/assets/980f5ba3-b8d8-41ce-b0fa-34d950e3f116" />
 <br>
-<img width="1366" height="768" alt="2025-08-11-25-1755496520-scrot" src="https://github.com/user-attachments/assets/3da54e8e-9d8d-42df-983f-99a1b88718f9" />
+<img width="1346" height="729" alt="Screenshot 2025-08-19 at 15-41-28 NeoBoard" src="https://github.com/user-attachments/assets/cd9c786a-9939-45ae-92db-11fdfdbd41c1" />
 <br>
-<img width="1366" height="768" alt="2025-08-11-25-1755496528-scrot" src="https://github.com/user-attachments/assets/99753487-31f7-40cd-8533-fea99b0c9a29" />
+<img width="1346" height="729" alt="Screenshot 2025-08-19 at 15-41-44 NeoBoard" src="https://github.com/user-attachments/assets/e26a580e-02aa-4425-bfb8-93f41774194c" />
 <br>
-<img width="1366" height="768" alt="2025-08-11-25-1755496531-scrot" src="https://github.com/user-attachments/assets/806bfe56-ea98-4bd5-a3fb-40dbabbba9a8" />
+<img width="1346" height="729" alt="Screenshot 2025-08-19 at 15-41-54 NeoBoard" src="https://github.com/user-attachments/assets/46dac5ce-cb72-49b1-8b57-7b9fc2f46986" />
 <br>
-<img width="1366" height="768" alt="2025-08-11-25-1755496552-scrot" src="https://github.com/user-attachments/assets/72369500-d126-4986-9c50-d1bd7965efb2" />
+<img width="1346" height="729" alt="Screenshot 2025-08-19 at 15-42-05 NeoBoard" src="https://github.com/user-attachments/assets/fd1595c8-9f11-4b47-9e25-fd0571d787be" />
