@@ -8,9 +8,8 @@ import './retro_button.dart' as retro;
 
 class ReportDialog extends StatefulWidget {
   final int targetId;
-  final String targetType; // 'thread' or 'reply'
-  final String baseUrl;  // The base URL for your API (e.g., http://.../api/)
-
+  final String targetType;
+  final String baseUrl;
   const ReportDialog({
     super.key,
     required this.targetId,
@@ -24,8 +23,7 @@ class ReportDialog extends StatefulWidget {
 
 class _ReportDialogState extends State<ReportDialog> {
   final _formKey = GlobalKey<FormState>();
-  
-  // A list of valid reasons for reporting
+
   final List<String> _reasons = [
     'Spam',
     'Hate Speech',
@@ -33,16 +31,14 @@ class _ReportDialogState extends State<ReportDialog> {
     'Harassment',
     'Other',
   ];
-  // The currently selected reason, defaulting to the first item
   late String _selectedReason;
-  
+
   final TextEditingController _descriptionController = TextEditingController();
   bool _isSubmitting = false;
 
   @override
   void initState() {
     super.initState();
-    // Initialize the selected reason
     _selectedReason = _reasons.first;
   }
 
@@ -52,14 +48,11 @@ class _ReportDialogState extends State<ReportDialog> {
     super.dispose();
   }
 
-  // **FIXED**: Implemented the actual API call
   Future<void> _submitReport() async {
-    // Validate the form before proceeding
     if (!_formKey.currentState!.validate()) {
       return;
     }
-    
-    // Set loading state to disable the button and show an indicator
+
     setState(() => _isSubmitting = true);
 
     try {
@@ -74,28 +67,31 @@ class _ReportDialogState extends State<ReportDialog> {
         },
       );
 
-      // Check if the widget is still in the tree after the async operation
       if (!mounted) return;
 
-      // The PHP script returns 201 on successful creation
       if (response.statusCode == 201) {
-        Navigator.of(context).pop(); // Close the dialog on success
+        Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Report submitted successfully!'), backgroundColor: Colors.green),
+          const SnackBar(
+            content: Text('Report submitted successfully!'),
+            backgroundColor: Colors.green,
+          ),
         );
       } else {
-        // If the server returned an error, try to decode it from the response body
-        final error = json.decode(response.body)['error'] ?? 'An unknown error occurred';
+        final error =
+            json.decode(response.body)['error'] ?? 'An unknown error occurred';
         throw Exception(error);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to submit report: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Failed to submit report: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
-      // Always reset the submitting state, even if an error occurs
       if (mounted) {
         setState(() => _isSubmitting = false);
       }
@@ -104,7 +100,6 @@ class _ReportDialogState extends State<ReportDialog> {
 
   @override
   Widget build(BuildContext context) {
-    // Using AlertDialog for a standard, responsive layout
     return AlertDialog(
       title: Text(
         'Report Content',
@@ -112,13 +107,18 @@ class _ReportDialogState extends State<ReportDialog> {
       ),
       content: Form(
         key: _formKey,
-        child: SingleChildScrollView( // Prevents overflow if the keyboard appears
+        child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               DropdownButtonFormField<String>(
                 value: _selectedReason,
-                items: _reasons.map((reason) => DropdownMenuItem(value: reason, child: Text(reason))).toList(),
+                items: _reasons
+                    .map(
+                      (reason) =>
+                          DropdownMenuItem(value: reason, child: Text(reason)),
+                    )
+                    .toList(),
                 onChanged: (value) {
                   if (value != null) {
                     setState(() => _selectedReason = value);
@@ -128,7 +128,8 @@ class _ReportDialogState extends State<ReportDialog> {
                   labelText: 'Reason',
                   border: OutlineInputBorder(),
                 ),
-                validator: (value) => value == null ? 'Please select a reason' : null,
+                validator: (value) =>
+                    value == null ? 'Please select a reason' : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -151,12 +152,15 @@ class _ReportDialogState extends State<ReportDialog> {
           child: const Text('Cancel'),
         ),
         retro.RetroButton(
-          onTap: _isSubmitting ? null : _submitReport, // Disable button while submitting
+          onTap: _isSubmitting ? null : _submitReport,
           child: _isSubmitting
               ? const SizedBox(
                   height: 20,
                   width: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.black,
+                  ),
                 )
               : const Text('Submit'),
         ),

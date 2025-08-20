@@ -3,8 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../models/report.dart'; // To get the Report model
-import './retro_button.dart' as retro; // To use your custom button
+import '../models/report.dart';
+import './retro_button.dart' as retro;
 
 class DeleteReportDialog extends StatelessWidget {
   final Report report;
@@ -13,8 +13,6 @@ class DeleteReportDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Using AlertDialog provides a standard, responsive layout that
-    // works well on both mobile and desktop.
     return AlertDialog(
       backgroundColor: const Color(0xFFE0E0E0),
       shape: RoundedRectangleBorder(
@@ -33,14 +31,17 @@ class DeleteReportDialog extends StatelessWidget {
                 fontSize: 22,
               ),
             ),
-          )
+          ),
         ],
       ),
       content: RichText(
         text: TextSpan(
           style: GoogleFonts.vt323(fontSize: 16, color: Colors.black),
           children: [
-            const TextSpan(text: 'Are you sure you want to permanently delete the report for this '),
+            const TextSpan(
+              text:
+                  'Are you sure you want to permanently delete the report for this ',
+            ),
             TextSpan(
               text: report.reportType,
               style: const TextStyle(fontWeight: FontWeight.bold),
@@ -50,15 +51,10 @@ class DeleteReportDialog extends StatelessWidget {
         ),
       ),
       actions: [
-        // 'Cancel' button, which returns `false` when pressed
         retro.RetroButton(
           onTap: () => Navigator.of(context).pop(false),
-          child: Text(
-            'Cancel',
-            style: GoogleFonts.vt323(fontSize: 16),
-          ),
+          child: Text('Cancel', style: GoogleFonts.vt323(fontSize: 16)),
         ),
-        // 'Delete' button, which returns `true` when pressed
         retro.RetroButton(
           onTap: () => Navigator.of(context).pop(true),
           child: Text(

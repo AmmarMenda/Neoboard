@@ -23,21 +23,19 @@ class FormattedText extends StatelessWidget {
 
     for (int i = 0; i < lines.length; i++) {
       final line = lines[i];
-      
+
       if (line.trim().startsWith('>')) {
-        // Greentext line
         spans.add(
           TextSpan(
             text: line,
             style: GoogleFonts.vt323(
               fontSize: fontSize,
-              color: const Color(0xFF789922), // Classic greentext color
+              color: const Color(0xFF789922),
               fontWeight: fontWeight,
             ),
           ),
         );
       } else {
-        // Regular text line
         spans.add(
           TextSpan(
             text: line,
@@ -50,7 +48,6 @@ class FormattedText extends StatelessWidget {
         );
       }
 
-      // Add newline except for the last line
       if (i < lines.length - 1) {
         spans.add(
           TextSpan(
@@ -61,9 +58,6 @@ class FormattedText extends StatelessWidget {
       }
     }
 
-    return RichText(
-      text: TextSpan(children: spans),
-      softWrap: true,
-    );
+    return RichText(text: TextSpan(children: spans), softWrap: true);
   }
 }

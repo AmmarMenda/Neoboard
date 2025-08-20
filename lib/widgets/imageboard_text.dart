@@ -22,8 +22,10 @@ class ImageboardText extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Adjust font size based on available width and screen size
-        double adjustedFontSize = ResponsiveHelper.getFontSize(context, fontSize);
+        double adjustedFontSize = ResponsiveHelper.getFontSize(
+          context,
+          fontSize,
+        );
 
         if (constraints.maxWidth < 300) {
           adjustedFontSize *= 0.8;
@@ -41,7 +43,6 @@ class ImageboardText extends StatelessWidget {
   }
 
   List<TextSpan> _parseText(String text, double fontSize) {
-    // Splitting lines to handle greentext (lines starting with '>') and inline formatting
     final lines = text.split('\n');
     final spans = <TextSpan>[];
 
@@ -52,7 +53,7 @@ class ImageboardText extends StatelessWidget {
           TextSpan(
             text: line + (i < lines.length - 1 ? '\n' : ''),
             style: GoogleFonts.vt323(
-              color: const Color(0xFF789922), // Classic greentext green
+              color: const Color(0xFF789922),
               fontSize: fontSize,
               fontWeight: fontWeight,
             ),
@@ -69,90 +70,87 @@ class ImageboardText extends StatelessWidget {
   }
 
   List<TextSpan> _parseInlineFormatting(String text, double fontSize) {
-    // Parse inline markdown-like syntax: **bold**, *italic*, `code`, and >>post references
     final spans = <TextSpan>[];
     int currentIndex = 0;
 
-    final regex = RegExp(
-      r'(\*\*.+?\*\*|\*.+?\*|`.+?`|>>\d+)',
-      multiLine: true,
-    );
+    final regex = RegExp(r'(\*\*.+?\*\*|\*.+?\*|`.+?`|>>\d+)', multiLine: true);
 
     final matches = regex.allMatches(text).toList();
 
     for (final match in matches) {
       if (match.start > currentIndex) {
-        // Plain text before match
-        spans.add(TextSpan(
-          text: text.substring(currentIndex, match.start),
-          style: _normalStyle(fontSize),
-        ));
+        spans.add(
+          TextSpan(
+            text: text.substring(currentIndex, match.start),
+            style: _normalStyle(fontSize),
+          ),
+        );
       }
 
       final matchText = match.group(0)!;
 
       if (matchText.startsWith('**')) {
-        // Bold
-        spans.add(TextSpan(
-          text: matchText.substring(2, matchText.length - 2),
-          style: GoogleFonts.vt323(
-            fontSize: fontSize,
-            fontWeight: FontWeight.bold,
-            color: defaultColor ?? Colors.black,
-          ),
-        ));
-      } else if (matchText.startsWith('*')) {
-        // Italic
-        spans.add(TextSpan(
-          text: matchText.substring(1, matchText.length - 1),
-          style: GoogleFonts.vt323(
-            fontSize: fontSize,
-            fontStyle: FontStyle.italic,
-            color: defaultColor ?? Colors.black,
-          ),
-        ));
-      } else if (matchText.startsWith('`')) {
-        // Inline code
-        spans.add(TextSpan(
-          text: matchText.substring(1, matchText.length - 1),
-          style: GoogleFonts.vt323(
-            fontSize: fontSize * 0.9,
-            backgroundColor: const Color(0xFFF0F0F0),
-            color: Colors.black87,
+        spans.add(
+          TextSpan(
+            text: matchText.substring(2, matchText.length - 2),
+            style: GoogleFonts.vt323(
+              fontSize: fontSize,
+              fontWeight: FontWeight.bold,
+              color: defaultColor ?? Colors.black,
             ),
-        ));
-      } else if (matchText.startsWith('>>')) {
-        // Post reference - stylized
-        spans.add(TextSpan(
-          text: matchText,
-          style: GoogleFonts.vt323(
-            fontSize: fontSize,
-            color: Colors.blue,
-            decoration: TextDecoration.underline,
           ),
-        ));
+        );
+      } else if (matchText.startsWith('*')) {
+        spans.add(
+          TextSpan(
+            text: matchText.substring(1, matchText.length - 1),
+            style: GoogleFonts.vt323(
+              fontSize: fontSize,
+              fontStyle: FontStyle.italic,
+              color: defaultColor ?? Colors.black,
+            ),
+          ),
+        );
+      } else if (matchText.startsWith('`')) {
+        spans.add(
+          TextSpan(
+            text: matchText.substring(1, matchText.length - 1),
+            style: GoogleFonts.vt323(
+              fontSize: fontSize * 0.9,
+              backgroundColor: const Color(0xFFF0F0F0),
+              color: Colors.black87,
+            ),
+          ),
+        );
+      } else if (matchText.startsWith('>>')) {
+        spans.add(
+          TextSpan(
+            text: matchText,
+            style: GoogleFonts.vt323(
+              fontSize: fontSize,
+              color: Colors.blue,
+              decoration: TextDecoration.underline,
+            ),
+          ),
+        );
       } else {
-        // Fallback plain
         spans.add(TextSpan(text: matchText, style: _normalStyle(fontSize)));
       }
 
       currentIndex = match.end;
     }
 
-    // Remaining text after last match
     if (currentIndex < text.length) {
-      spans.add(TextSpan(
-        text: text.substring(currentIndex),
-        style: _normalStyle(fontSize),
-      ));
+      spans.add(
+        TextSpan(
+          text: text.substring(currentIndex),
+          style: _normalStyle(fontSize),
+        ),
+      );
     }
 
-    // If no matches found, just return plain text span
     if (spans.isEmpty) {
-      spans.add(TextSpan(
-        text: text,
-        style: _normalStyle(fontSize),
-      ));
+      spans.add(TextSpan(text: text, style: _normalStyle(fontSize)));
     }
 
     return spans;

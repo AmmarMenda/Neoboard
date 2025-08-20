@@ -24,8 +24,7 @@ class RetroHeader extends StatelessWidget implements PreferredSizeWidget {
   });
 
   @override
-  Size get preferredSize => const Size.fromHeight(120); // Increased height for overflow fix
-
+  Size get preferredSize => const Size.fromHeight(120);
   @override
   Widget build(BuildContext context) {
     return Material(
@@ -84,8 +83,10 @@ class RetroHeader extends StatelessWidget implements PreferredSizeWidget {
                     return GestureDetector(
                       onTap: () => onBoardTap?.call(board),
                       child: Container(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: selected ? Colors.black : Colors.white,
                           border: Border.all(color: Colors.black),
@@ -96,8 +97,9 @@ class RetroHeader extends StatelessWidget implements PreferredSizeWidget {
                           style: GoogleFonts.vt323(
                             fontSize: 16,
                             color: selected ? Colors.white : Colors.black,
-                            fontWeight:
-                                selected ? FontWeight.bold : FontWeight.normal,
+                            fontWeight: selected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
                           ),
                         ),
                       ),

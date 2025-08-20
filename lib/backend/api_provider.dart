@@ -2,10 +2,7 @@
 
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:http/http.dart' as http;
-import 'package:image_picker/image_picker.dart';
-
 import '../models/thread.dart';
 import '../models/post.dart';
 import '../models/report.dart';
@@ -46,7 +43,10 @@ class ApiProvider {
     req.fields['board'] = board;
 
     if (image != null) {
-      final multipartFile = await http.MultipartFile.fromPath('image', image.path);
+      final multipartFile = await http.MultipartFile.fromPath(
+        'image',
+        image.path,
+      );
       req.files.add(multipartFile);
     }
 
@@ -91,7 +91,10 @@ class ApiProvider {
     req.fields['content'] = content;
 
     if (image != null) {
-      final multipartFile = await http.MultipartFile.fromPath('image', image.path);
+      final multipartFile = await http.MultipartFile.fromPath(
+        'image',
+        image.path,
+      );
       req.files.add(multipartFile);
     }
 
@@ -129,10 +132,10 @@ class ApiProvider {
   // Update report status
   Future<void> updateReportStatus(int reportId, String status) async {
     final uri = Uri.parse('$baseUrl/report_update.php');
-    final res = await http.post(uri, body: {
-      'id': reportId.toString(),
-      'status': status,
-    });
+    final res = await http.post(
+      uri,
+      body: {'id': reportId.toString(), 'status': status},
+    );
 
     if (res.statusCode != 200) {
       throw Exception('Failed to update report');
@@ -147,9 +150,7 @@ class ApiProvider {
   // Delete report
   Future<void> deleteReport(int reportId) async {
     final uri = Uri.parse('$baseUrl/report_delete.php');
-    final res = await http.post(uri, body: {
-      'id': reportId.toString(),
-    });
+    final res = await http.post(uri, body: {'id': reportId.toString()});
 
     if (res.statusCode != 200) {
       throw Exception('Failed to delete report');
@@ -164,9 +165,7 @@ class ApiProvider {
   // Delete thread
   Future<void> deleteThread(int threadId) async {
     final uri = Uri.parse('$baseUrl/thread_delete.php');
-    final res = await http.post(uri, body: {
-      'id': threadId.toString(),
-    });
+    final res = await http.post(uri, body: {'id': threadId.toString()});
 
     if (res.statusCode != 200) {
       throw Exception('Failed to delete thread');
@@ -181,10 +180,10 @@ class ApiProvider {
   // Simple login example, returns token string or throws
   Future<String> login(String username, String password) async {
     final uri = Uri.parse('$baseUrl/login.php');
-    final res = await http.post(uri, body: {
-      'username': username,
-      'password': password,
-    });
+    final res = await http.post(
+      uri,
+      body: {'username': username, 'password': password},
+    );
 
     if (res.statusCode != 200) {
       throw Exception('Login request failed');

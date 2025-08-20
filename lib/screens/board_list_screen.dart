@@ -5,8 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-
 import '../models/thread.dart';
 import '../widgets/retro_button.dart' as retro;
 import '../widgets/retro_header.dart';
@@ -92,7 +90,7 @@ class _BoardListScreenState extends State<BoardListScreen> {
       MaterialPageRoute(builder: (_) => const ModeratorLoginScreen()),
     );
   }
-  
+
   void _createNewThread() async {
     // When creating a new thread, it defaults to the currently selected board.
     final result = await Navigator.push(
@@ -141,29 +139,95 @@ class _BoardListScreenState extends State<BoardListScreen> {
                           children: [
                             Row(
                               children: [
-                                const Icon(Icons.security, size: 16, color: Colors.black54),
+                                const Icon(
+                                  Icons.security,
+                                  size: 16,
+                                  color: Colors.black54,
+                                ),
                                 const SizedBox(width: 8),
-                                Text('Staff Access:', style: GoogleFonts.vt323(fontSize: ResponsiveHelper.getFontSize(context, 14), color: Colors.black54)),
+                                Text(
+                                  'Staff Access:',
+                                  style: GoogleFonts.vt323(
+                                    fontSize: ResponsiveHelper.getFontSize(
+                                      context,
+                                      14,
+                                    ),
+                                    color: Colors.black54,
+                                  ),
+                                ),
                               ],
                             ),
                             const SizedBox(height: 8),
                             SizedBox(
                               width: double.infinity,
-                              child: retro.RetroButton(onTap: _openModeratorLogin, child: Text('Moderator Login', style: GoogleFonts.vt323(fontSize: ResponsiveHelper.getFontSize(context, 16)))),
+                              child: retro.RetroButton(
+                                onTap: _openModeratorLogin,
+                                child: Text(
+                                  'Moderator Login',
+                                  style: GoogleFonts.vt323(
+                                    fontSize: ResponsiveHelper.getFontSize(
+                                      context,
+                                      16,
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ),
                             const SizedBox(height: 4),
-                            Text('Demo: batman/ammar007', style: GoogleFonts.vt323(fontSize: ResponsiveHelper.getFontSize(context, 12), color: Colors.black45)),
+                            Text(
+                              'Demo: batman/ammar007',
+                              style: GoogleFonts.vt323(
+                                fontSize: ResponsiveHelper.getFontSize(
+                                  context,
+                                  12,
+                                ),
+                                color: Colors.black45,
+                              ),
+                            ),
                           ],
                         )
                       : Row(
                           children: [
-                            const Icon(Icons.security, size: 20, color: Colors.black54),
+                            const Icon(
+                              Icons.security,
+                              size: 20,
+                              color: Colors.black54,
+                            ),
                             const SizedBox(width: 8),
-                            Text('Staff Access:', style: GoogleFonts.vt323(fontSize: ResponsiveHelper.getFontSize(context, 14), color: Colors.black54)),
+                            Text(
+                              'Staff Access:',
+                              style: GoogleFonts.vt323(
+                                fontSize: ResponsiveHelper.getFontSize(
+                                  context,
+                                  14,
+                                ),
+                                color: Colors.black54,
+                              ),
+                            ),
                             const SizedBox(width: 12),
-                            retro.RetroButton(onTap: _openModeratorLogin, child: Text('Moderator Login', style: GoogleFonts.vt323(fontSize: ResponsiveHelper.getFontSize(context, 16)))),
+                            retro.RetroButton(
+                              onTap: _openModeratorLogin,
+                              child: Text(
+                                'Moderator Login',
+                                style: GoogleFonts.vt323(
+                                  fontSize: ResponsiveHelper.getFontSize(
+                                    context,
+                                    16,
+                                  ),
+                                ),
+                              ),
+                            ),
                             const Spacer(),
-                            Text('Demo: batman/ammar007', style: GoogleFonts.vt323(fontSize: ResponsiveHelper.getFontSize(context, 12), color: Colors.black45)),
+                            Text(
+                              'Demo: batman/ammar007',
+                              style: GoogleFonts.vt323(
+                                fontSize: ResponsiveHelper.getFontSize(
+                                  context,
+                                  12,
+                                ),
+                                color: Colors.black45,
+                              ),
+                            ),
                           ],
                         ),
                 ),
@@ -171,26 +235,49 @@ class _BoardListScreenState extends State<BoardListScreen> {
                   child: _loading
                       ? const Center(child: CircularProgressIndicator())
                       : _error
-                          ? Center(
-                              child: Text("Failed to load threads", style: GoogleFonts.vt323(fontSize: ResponsiveHelper.getFontSize(context, 18), color: Colors.red)),
-                            )
-                          : _threads.isEmpty
-                              ? Center(
-                                  child: Text("No threads found on $_selectedBoard", style: GoogleFonts.vt323(fontSize: ResponsiveHelper.getFontSize(context, 20), color: Colors.black54)),
-                                )
-                              : ListView.builder(
-                                  padding: EdgeInsets.fromLTRB(
-                                    ResponsiveHelper.getResponsivePadding(context).left,
-                                    ResponsiveHelper.getResponsivePadding(context).top,
-                                    ResponsiveHelper.getResponsivePadding(context).right,
-                                    80, // Padding at the bottom for the button
-                                  ),
-                                  itemCount: _threads.length,
-                                  itemBuilder: (_, i) {
-                                    final t = _threads[i];
-                                    return ThreadListItem(thread: t, onTap: () => _openThread(t));
-                                  },
-                                ),
+                      ? Center(
+                          child: Text(
+                            "Failed to load threads",
+                            style: GoogleFonts.vt323(
+                              fontSize: ResponsiveHelper.getFontSize(
+                                context,
+                                18,
+                              ),
+                              color: Colors.red,
+                            ),
+                          ),
+                        )
+                      : _threads.isEmpty
+                      ? Center(
+                          child: Text(
+                            "No threads found on $_selectedBoard",
+                            style: GoogleFonts.vt323(
+                              fontSize: ResponsiveHelper.getFontSize(
+                                context,
+                                20,
+                              ),
+                              color: Colors.black54,
+                            ),
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: EdgeInsets.fromLTRB(
+                            ResponsiveHelper.getResponsivePadding(context).left,
+                            ResponsiveHelper.getResponsivePadding(context).top,
+                            ResponsiveHelper.getResponsivePadding(
+                              context,
+                            ).right,
+                            80, // Padding at the bottom for the button
+                          ),
+                          itemCount: _threads.length,
+                          itemBuilder: (_, i) {
+                            final t = _threads[i];
+                            return ThreadListItem(
+                              thread: t,
+                              onTap: () => _openThread(t),
+                            );
+                          },
+                        ),
                 ),
               ],
             ),
@@ -202,8 +289,16 @@ class _BoardListScreenState extends State<BoardListScreen> {
               child: retro.RetroButton(
                 onTap: _createNewThread,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-                  child: Text('New Thread', style: GoogleFonts.vt323(fontSize: ResponsiveHelper.getFontSize(context, 16))),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12.0,
+                    vertical: 8.0,
+                  ),
+                  child: Text(
+                    'New Thread',
+                    style: GoogleFonts.vt323(
+                      fontSize: ResponsiveHelper.getFontSize(context, 16),
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -224,8 +319,13 @@ class ThreadListItem extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Container(
-        margin: EdgeInsets.only(bottom: ResponsiveHelper.getFontSize(context, 12)),
-        decoration: BoxDecoration(color: const Color(0xFFE0E0E0), border: Border.all(color: Colors.black, width: 1)),
+        margin: EdgeInsets.only(
+          bottom: ResponsiveHelper.getFontSize(context, 12),
+        ),
+        decoration: BoxDecoration(
+          color: const Color(0xFFE0E0E0),
+          border: Border.all(color: Colors.black, width: 1),
+        ),
         child: Row(
           children: [
             _threadImage(),
@@ -243,7 +343,10 @@ class ThreadListItem extends StatelessWidget {
         height: 80,
         color: const Color(0xFF9EC1C1),
         alignment: Alignment.center,
-        child: Text("NO IMG", style: GoogleFonts.vt323(fontSize: 10, color: Colors.black54)),
+        child: Text(
+          "NO IMG",
+          style: GoogleFonts.vt323(fontSize: 10, color: Colors.black54),
+        ),
       );
     }
     return Container(
@@ -251,7 +354,10 @@ class ThreadListItem extends StatelessWidget {
       height: 80,
       decoration: BoxDecoration(
         border: Border.all(color: Colors.black),
-        image: DecorationImage(fit: BoxFit.cover, image: NetworkImage("http://127.0.0.1:3441/${thread.imagePath}")),
+        image: DecorationImage(
+          fit: BoxFit.cover,
+          image: NetworkImage("http://127.0.0.1:3441/${thread.imagePath}"),
+        ),
       ),
     );
   }
@@ -264,15 +370,37 @@ class ThreadListItem extends StatelessWidget {
         children: [
           _pill(thread.board, const Color(0xFFC0C0C0)),
           const SizedBox(height: 4),
-          Text(thread.title, style: GoogleFonts.vt323(fontWeight: FontWeight.bold, fontSize: ResponsiveHelper.getFontSize(context, 16)), maxLines: 2, overflow: TextOverflow.ellipsis),
+          Text(
+            thread.title,
+            style: GoogleFonts.vt323(
+              fontWeight: FontWeight.bold,
+              fontSize: ResponsiveHelper.getFontSize(context, 16),
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
           const SizedBox(height: 4),
-          Text("${thread.replies} replies", style: GoogleFonts.vt323(fontSize: ResponsiveHelper.getFontSize(context, 13), color: Colors.black54)),
+          Text(
+            "${thread.replies} replies",
+            style: GoogleFonts.vt323(
+              fontSize: ResponsiveHelper.getFontSize(context, 13),
+              color: Colors.black54,
+            ),
+          ),
           const SizedBox(height: 4),
           if (thread.content.isNotEmpty)
             SizedBox(
               height: 40,
               child: SingleChildScrollView(
-                child: Text(thread.content, style: GoogleFonts.vt323(fontSize: ResponsiveHelper.getFontSize(context, 13), color: Colors.black87), maxLines: 2, overflow: TextOverflow.ellipsis),
+                child: Text(
+                  thread.content,
+                  style: GoogleFonts.vt323(
+                    fontSize: ResponsiveHelper.getFontSize(context, 13),
+                    color: Colors.black87,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ),
         ],
@@ -283,8 +411,14 @@ class ThreadListItem extends StatelessWidget {
   Widget _pill(String text, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(color: color, border: Border.all(color: Colors.black)),
-      child: Text(text, style: GoogleFonts.vt323(fontSize: 12, fontWeight: FontWeight.bold)),
+      decoration: BoxDecoration(
+        color: color,
+        border: Border.all(color: Colors.black),
+      ),
+      child: Text(
+        text,
+        style: GoogleFonts.vt323(fontSize: 12, fontWeight: FontWeight.bold),
+      ),
     );
   }
 }
