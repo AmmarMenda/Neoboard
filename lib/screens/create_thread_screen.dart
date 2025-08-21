@@ -1,34 +1,26 @@
 // lib/screens/create_thread_screen.dart
-
 import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-
 import '../utils/responsive_helper.dart';
 import '../widgets/retro_button.dart' as retro;
+import '../widgets/leopard_app_bar.dart'; // Use the themed AppBar
 
 class CreateThreadScreen extends StatefulWidget {
   final String board;
-
   const CreateThreadScreen({super.key, required this.board});
-
   @override
   State<CreateThreadScreen> createState() => _CreateThreadScreenState();
 }
 
 class _CreateThreadScreenState extends State<CreateThreadScreen> {
   final _formKey = GlobalKey<FormState>();
-
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
-
   XFile? _selectedImage;
   final ImagePicker _picker = ImagePicker();
-
   bool _submitting = false;
 
   @override
@@ -46,28 +38,29 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Image pick error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Image pick error: $e')));
       }
     }
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!(_formKey.currentState?.validate() ?? false)) return;
 
     setState(() => _submitting = true);
 
     try {
-      Uri uri = Uri.parse('http://127.0.0.1:3441/thread_create.php'); // change to your API url
+      Uri uri = Uri.parse('http://127.0.0.1:3441/thread_create.php');
       var request = http.MultipartRequest('POST', uri);
-
       request.fields['title'] = _titleController.text.trim();
       request.fields['content'] = _contentController.text.trim();
       request.fields['board'] = widget.board;
 
       if (_selectedImage != null) {
-        request.files.add(await http.MultipartFile.fromPath('image', _selectedImage!.path));
+        request.files.add(
+          await http.MultipartFile.fromPath('image', _selectedImage!.path),
+        );
       }
 
       var response = await request.send();
@@ -77,26 +70,23 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
       if (response.statusCode == 200 && jsonResponse['success'] == true) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Thread created successfully!'), backgroundColor: Colors.green),
+            const SnackBar(
+              content: Text('Thread created successfully!'),
+              backgroundColor: Colors.green,
+            ),
           );
-          Navigator.of(context).pop({
-            'title': _titleController.text.trim(),
-            'content': _contentController.text.trim(),
-            'image': _selectedImage != null ? File(_selectedImage!.path) : null,
-          });
+          Navigator.of(context).pop(true); // Pop with a success indicator
         }
       } else {
-        String errorMsg = jsonResponse['error'] ?? 'Failed to create thread.';
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
-          );
-        }
+        throw Exception(jsonResponse['error'] ?? 'Failed to create thread.');
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error submitting thread: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Error submitting thread: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
@@ -113,97 +103,94 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
   @override
   Widget build(BuildContext context) {
     final bool isSmallScreen = ResponsiveHelper.isSmallScreen(context);
-
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Create Thread on ${widget.board}', style: GoogleFonts.vt323()),
-        backgroundColor: const Color(0xFFC0C0C0),
-      ),
+      // *** THE FIX: Use the themed LeopardAppBar ***
+      appBar: LeopardAppBar(title: Text('Create Thread on ${widget.board}')),
       body: SingleChildScrollView(
-        padding: ResponsiveHelper.getResponsivePadding(context),
+        padding: ResponsiveHelper.getResponsivePadding(context, 24, 16),
         child: Form(
           key: _formKey,
           child: Column(
+            crossAxisAlignment:
+                CrossAxisAlignment.stretch, // Ensure buttons stretch
             children: [
+              // *** THE FIX: Use the themed InputDecoration ***
               TextFormField(
                 controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Title',
-                  border: OutlineInputBorder(),
-                ),
+                decoration: const InputDecoration(hintText: 'Title'),
                 maxLength: 100,
-                validator: (value) =>
-                    value == null || value.trim().isEmpty ? 'Please enter a title' : null,
+                validator: (value) => value == null || value.trim().isEmpty
+                    ? 'Please enter a title'
+                    : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _contentController,
                 decoration: const InputDecoration(
-                  labelText: 'Content',
-                  border: OutlineInputBorder(),
+                  hintText: 'Content (optional)',
                 ),
-                maxLines: 6,
+                maxLines: 8,
                 maxLength: 1000,
-                validator: (value) =>
-                    value == null || value.trim().isEmpty ? 'Please enter content' : null,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 20),
               if (_selectedImage != null)
                 Stack(
                   children: [
-                    Image.file(
-                      File(_selectedImage!.path),
-                      height: isSmallScreen ? 150 : 250,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.file(
+                        File(_selectedImage!.path),
+                        height: isSmallScreen ? 150 : 250,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
                     ),
                     Positioned(
                       right: 8,
                       top: 8,
-                      child: GestureDetector(
-                        onTap: _removeSelectedImage,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.6),
-                            shape: BoxShape.circle,
+                      child: CircleAvatar(
+                        radius: 16,
+                        backgroundColor: Colors.black.withOpacity(0.6),
+                        child: IconButton(
+                          padding: EdgeInsets.zero,
+                          icon: const Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: 18,
                           ),
-                          child: const Icon(Icons.close, color: Colors.white),
+                          onPressed: _removeSelectedImage,
                         ),
                       ),
                     ),
                   ],
                 ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               retro.RetroButton(
-                onTap: () async {
-                  await _pickImage();
-                },
+                onTap: _pickImage,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.image),
+                    const Icon(Icons.image_outlined),
                     const SizedBox(width: 8),
-                    Text('Pick Image', style: GoogleFonts.vt323()),
+                    // *** THE FIX: Text inherits font from button ***
+                    Text(_selectedImage == null ? 'Add Image' : 'Change Image'),
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: retro.RetroButton(
-                  onTap: _submitting
-    ? null
-    : () async {
-        await _submit();
-      },
-                  child: _submitting
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Text('Create Thread', style: GoogleFonts.vt323()),
-                ),
+              const SizedBox(height: 24),
+              retro.RetroButton(
+                onTap: _submitting ? null : _submit,
+                child: _submitting
+                    ? const SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: Colors.white,
+                        ),
+                      )
+                    // *** THE FIX: Text inherits font from button ***
+                    : const Text('Create Thread'),
               ),
             ],
           ),

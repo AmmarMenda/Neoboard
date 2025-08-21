@@ -1,22 +1,20 @@
 // lib/screens/moderator_thread_view_screen.dart
-
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
-
+import 'package:intl/intl.dart';
 import '../models/post.dart';
 import '../models/thread.dart';
 import '../utils/responsive_helper.dart';
 import '../widgets/imageboard_text.dart';
 import '../widgets/retro_button.dart' as retro;
+import '../widgets/leopard_app_bar.dart';
+import '../widgets/retro_panel.dart';
 
 class ModeratorThreadViewScreen extends StatefulWidget {
   final int threadId;
-
   const ModeratorThreadViewScreen({super.key, required this.threadId});
-
   @override
   State<ModeratorThreadViewScreen> createState() =>
       _ModeratorThreadViewScreenState();
@@ -36,13 +34,13 @@ class _ModeratorThreadViewScreenState extends State<ModeratorThreadViewScreen> {
     _loadThread();
   }
 
+  // *** THE FIX: Restored the original, correct data-fetching logic ***
   Future<void> _loadThread() async {
     if (!mounted) return;
     setState(() {
       loading = true;
       error = false;
     });
-
     try {
       // --- Fetch Thread ---
       final threadUri = Uri.parse(
@@ -51,19 +49,14 @@ class _ModeratorThreadViewScreenState extends State<ModeratorThreadViewScreen> {
       final threadResp = await http
           .get(threadUri)
           .timeout(const Duration(seconds: 10));
-
       if (threadResp.statusCode != 200) {
         throw Exception(
           'Server error: Failed to load thread with status code ${threadResp.statusCode}',
         );
       }
-
       final threadJson = json.decode(threadResp.body);
-
-      // **FIXED**: Check for the 'success' flag and parse the nested 'thread' object
       if (threadJson['success'] == true && threadJson['thread'] != null) {
         final fetchedThread = Thread.fromJson(threadJson['thread']);
-
         // --- Fetch Replies ---
         final repliesUri = Uri.parse(
           '${baseUrl}replies.php?thread_id=${widget.threadId}',
@@ -71,18 +64,15 @@ class _ModeratorThreadViewScreenState extends State<ModeratorThreadViewScreen> {
         final repliesResp = await http
             .get(repliesUri)
             .timeout(const Duration(seconds: 10));
-
         if (repliesResp.statusCode != 200) {
           throw Exception(
             'Server error: Failed to load replies with status code ${repliesResp.statusCode}',
           );
         }
-
         final repliesJson = json.decode(repliesResp.body) as List;
         final fetchedReplies = repliesJson
             .map((e) => Post.fromJson(e))
             .toList();
-
         if (mounted) {
           setState(() {
             thread = fetchedThread;
@@ -112,19 +102,26 @@ class _ModeratorThreadViewScreenState extends State<ModeratorThreadViewScreen> {
     final confirmed =
         await showDialog<bool>(
           context: context,
-          builder: (_) => AlertDialog(
-            title: const Text('Delete Reply'),
-            content: const Text('Are you sure you want to delete this reply?'),
+          builder: (ctx) => AlertDialog(
+            backgroundColor: Theme.of(ctx).dialogTheme.backgroundColor,
+            shape: Theme.of(ctx).dialogTheme.shape,
+            title: Text(
+              'Delete Reply',
+              style: Theme.of(ctx).textTheme.titleLarge,
+            ),
+            content: const Text(
+              'Are you sure you want to delete this reply? This action is permanent.',
+            ),
             actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
+              retro.RetroButton(
+                onTap: () => Navigator.pop(ctx, false),
                 child: const Text('Cancel'),
               ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text(
+              retro.RetroButton(
+                onTap: () => Navigator.pop(ctx, true),
+                child: Text(
                   'Delete',
-                  style: TextStyle(color: Colors.red),
+                  style: TextStyle(color: Theme.of(ctx).colorScheme.error),
                 ),
               ),
             ],
@@ -141,7 +138,7 @@ class _ModeratorThreadViewScreenState extends State<ModeratorThreadViewScreen> {
       );
       final data = json.decode(resp.body);
       if (data['success'] == true) {
-        _loadThread(); // Refresh the list
+        _loadThread();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Reply deleted successfully'),
@@ -163,71 +160,65 @@ class _ModeratorThreadViewScreenState extends State<ModeratorThreadViewScreen> {
     }
   }
 
-  String _formatTime(DateTime dt) {
-    final diff = DateTime.now().difference(dt);
-    if (diff.inDays > 0) return '${diff.inDays}d ago';
-    if (diff.inHours > 0) return '${diff.inHours}h ago';
-    if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
-    return 'Just now';
-  }
+  String _formatTime(DateTime dt) => DateFormat('dd/MM/yy HH:mm').format(dt);
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     if (loading) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('Loading...'),
-          backgroundColor: const Color(0xFFC0C0C0),
-        ),
-        body: const Center(child: CircularProgressIndicator()),
+      return const Scaffold(
+        appBar: LeopardAppBar(title: Text('Loading...')),
+        body: Center(child: CircularProgressIndicator()),
       );
     }
-
     if (error || thread == null) {
       return Scaffold(
-        appBar: AppBar(
-          title: const Text('Error'),
-          backgroundColor: const Color(0xFFC0C0C0),
-        ),
+        appBar: const LeopardAppBar(title: Text('Error')),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Text(errorMessage, textAlign: TextAlign.center),
+            child: Text(
+              errorMessage,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: theme.colorScheme.error,
+              ),
+            ),
           ),
         ),
       );
     }
 
     final small = ResponsiveHelper.isSmallScreen(context);
-
     return Scaffold(
-      appBar: AppBar(
-        title: Text(thread!.title, style: GoogleFonts.vt323(fontSize: 20)),
-        backgroundColor: const Color(0xFFC0C0C0),
+      appBar: LeopardAppBar(
+        title: Text(thread!.title, overflow: TextOverflow.ellipsis),
       ),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Column(
         children: [
-          // Thread display
           Container(
             padding: ResponsiveHelper.defaultPadding,
+            color: theme.canvasColor,
             constraints: BoxConstraints(maxHeight: small ? 250 : 300),
-            decoration: const BoxDecoration(color: Color(0xFFE0E0E0)),
             child: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      _pill(thread!.board),
+                      _pill(context, thread!.board),
                       const SizedBox(width: 6),
-                      _pill(thread!.formattedId, color: Colors.redAccent),
+                      _pill(
+                        context,
+                        thread!.formattedId,
+                        color: theme.colorScheme.error,
+                      ),
                       const SizedBox(width: 10),
                       Text(
                         'Replies: ${thread!.replies} • ${_formatTime(thread!.createdAt)}',
-                        style: GoogleFonts.vt323(
-                          fontSize: 12,
-                          color: Colors.black54,
-                        ),
+                        style: theme.textTheme.bodySmall,
                       ),
                     ],
                   ),
@@ -239,12 +230,17 @@ class _ModeratorThreadViewScreenState extends State<ModeratorThreadViewScreen> {
                       height: small ? 150 : 200,
                       width: double.infinity,
                       fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) => Text(
+                        'Image failed to load',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.error,
+                        ),
+                      ),
                     ),
                   const SizedBox(height: 10),
                   Text(
                     thread!.title,
-                    style: GoogleFonts.vt323(
-                      fontSize: 20,
+                    style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -254,12 +250,12 @@ class _ModeratorThreadViewScreenState extends State<ModeratorThreadViewScreen> {
               ),
             ),
           ),
-          // Replies list
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(10),
+            child: ListView.separated(
+              padding: const EdgeInsets.all(16),
               itemCount: replies.length,
-              itemBuilder: (_, i) => _replyItem(replies[i]),
+              separatorBuilder: (ctx, idx) => const SizedBox(height: 12),
+              itemBuilder: (_, i) => _replyItem(context, replies[i]),
             ),
           ),
         ],
@@ -267,42 +263,42 @@ class _ModeratorThreadViewScreenState extends State<ModeratorThreadViewScreen> {
     );
   }
 
-  Widget _pill(String text, {Color color = const Color(0xFFC0C0C0)}) {
+  Widget _pill(BuildContext context, String text, {Color? color}) {
+    final theme = Theme.of(context);
+    final effectiveColor = color ?? theme.colorScheme.primary;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color,
-        border: Border.all(color: Colors.black),
+        color: effectiveColor.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: effectiveColor.withOpacity(0.5)),
       ),
       child: Text(
         text,
-        style: GoogleFonts.vt323(fontSize: 12, fontWeight: FontWeight.bold),
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: effectiveColor,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
 
-  Widget _replyItem(Post reply) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.black),
-        color: Colors.white,
-      ),
+  Widget _replyItem(BuildContext context, Post reply) {
+    final theme = Theme.of(context);
+    return RetroPanel(
+      padding: const EdgeInsets.all(12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _pill(reply.formattedId),
-          const SizedBox(width: 8),
           if (reply.imagePath != null && reply.imagePath!.isNotEmpty)
             Container(
               width: 50,
               height: 50,
-              margin: const EdgeInsets.only(right: 8),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.black),
-                image: DecorationImage(
-                  image: NetworkImage('$baseUrl${reply.imagePath!}'),
+              margin: const EdgeInsets.only(right: 12),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: Image.network(
+                  '$baseUrl${reply.imagePath!}',
                   fit: BoxFit.cover,
                 ),
               ),
@@ -311,24 +307,35 @@ class _ModeratorThreadViewScreenState extends State<ModeratorThreadViewScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  _formatTime(reply.createdAt),
-                  style: GoogleFonts.vt323(fontSize: 12, color: Colors.black54),
-                ),
-                const SizedBox(height: 6),
-                // **FIXED**: Handle null content safely
-                ImageboardText(text: reply.content),
-                const SizedBox(height: 6),
                 Row(
                   children: [
-                    retro.RetroButton(
-                      onTap: () => _deleteReply(reply.id),
-                      child: const Text(
-                        'Delete',
-                        style: TextStyle(color: Colors.red),
-                      ),
+                    _pill(context, reply.formattedId),
+                    const SizedBox(width: 8),
+                    Text(
+                      _formatTime(reply.createdAt),
+                      style: theme.textTheme.bodySmall,
                     ),
                   ],
+                ),
+                const SizedBox(height: 8),
+                ImageboardText(text: reply.content),
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: retro.RetroButton(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    onTap: () => _deleteReply(reply.id),
+                    child: Text(
+                      'Delete',
+                      style: TextStyle(
+                        color: theme.colorScheme.error,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),

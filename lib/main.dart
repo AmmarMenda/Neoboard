@@ -1,8 +1,7 @@
 // lib/main.dart
-
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'screens/board_list_screen.dart';
+import 'theme/leopard_theme.dart'; // Import your new theme file
 
 void main() {
   runApp(const NeoBoardApp());
@@ -16,21 +15,7 @@ class NeoBoardApp extends StatelessWidget {
     return MaterialApp(
       title: 'NeoBoard',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        scaffoldBackgroundColor: const Color(0xFFE0E0E0),
-        primaryColor: const Color(0xFFC0C0C0),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFFC0C0C0),
-          foregroundColor: Colors.black,
-          elevation: 0,
-        ),
-        textTheme: GoogleFonts.vt323TextTheme(
-          Theme.of(context).textTheme.apply(
-                bodyColor: Colors.black,
-                displayColor: Colors.black,
-              ),
-        ),
-      ),
+      theme: leopardTheme, // Apply the new theme here
       home: const BoardListScreen(),
     );
   }
