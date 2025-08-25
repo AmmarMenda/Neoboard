@@ -3,13 +3,11 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter/foundation.dart' show kIsWeb;
 
 import '../models/thread.dart';
 import '../widgets/retro_button.dart' as retro;
 import '../widgets/retro_header.dart';
 import '../widgets/retro_panel.dart';
-import '../widgets/leopard_app_bar.dart';
 import '../utils/responsive_helper.dart';
 import 'moderator_login_screen.dart';
 import 'thread_screen.dart';
@@ -322,8 +320,6 @@ class ThreadListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
       child: RetroPanel(

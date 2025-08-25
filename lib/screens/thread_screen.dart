@@ -7,7 +7,6 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import '../models/post.dart';
 import '../models/thread.dart';
-import '../utils/responsive_helper.dart';
 import '../widgets/imageboard_text.dart';
 import '../widgets/report_dialog.dart';
 import '../widgets/retro_button.dart' as retro;

@@ -36,26 +36,6 @@ class _CoordinatorFormScreenState extends State<CoordinatorFormScreen> {
     super.dispose();
   }
 
-  Future<void> _pickIdCard() async {
-    try {
-      final picked = await _picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 1000,
-        maxHeight: 1000,
-        imageQuality: 80,
-      );
-      if (picked != null) {
-        setState(() => _selectedIdCard = picked);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error picking image: $e')));
-      }
-    }
-  }
-
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
 
