@@ -3,20 +3,22 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-// *** THE FIX: We no longer need to import google_fonts here. ***
-// import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import '../models/thread.dart';
 import '../widgets/retro_button.dart' as retro;
 import '../widgets/retro_header.dart';
-import '../widgets/retro_panel.dart'; // Import the panel widget
+import '../widgets/retro_panel.dart';
+import '../widgets/leopard_app_bar.dart';
 import '../utils/responsive_helper.dart';
 import 'moderator_login_screen.dart';
 import 'thread_screen.dart';
 import 'create_thread_screen.dart';
+import 'coordinator_form_screen.dart';
 
 class BoardListScreen extends StatefulWidget {
   const BoardListScreen({super.key});
+
   @override
   State<BoardListScreen> createState() => _BoardListScreenState();
 }
@@ -26,6 +28,7 @@ class _BoardListScreenState extends State<BoardListScreen> {
   final List<Thread> _threads = [];
   bool _loading = false;
   bool _error = false;
+
   final List<String> _boards = ['/', '/b/', '/g/', '/v/', '/a/'];
   String _selectedBoard = '/';
 
@@ -40,24 +43,32 @@ class _BoardListScreenState extends State<BoardListScreen> {
       _loading = true;
       _error = false;
     });
+
     try {
       final uri = Uri.parse(
         '$baseUrl/threads.php${_selectedBoard == '/' ? '' : '?board=${_selectedBoard.replaceAll('/', '')}'}',
       );
       final resp = await http.get(uri);
+
       if (resp.statusCode != 200) throw Exception('Failed to load threads');
+
       final List data = jsonDecode(resp.body);
       final threads = data.map((json) => Thread.fromJson(json)).toList();
-      setState(() {
-        _threads.clear();
-        _threads.addAll(threads);
-        _loading = false;
-      });
+
+      if (mounted) {
+        setState(() {
+          _threads.clear();
+          _threads.addAll(threads);
+          _loading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _error = true;
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = true;
+          _loading = false;
+        });
+      }
       if (kDebugMode) print('Error fetching threads: $e');
     }
   }
@@ -83,6 +94,13 @@ class _BoardListScreenState extends State<BoardListScreen> {
     );
   }
 
+  void _openCoordinatorForm() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const CoordinatorFormScreen()),
+    );
+  }
+
   void _createNewThread() async {
     final result = await Navigator.push(
       context,
@@ -90,6 +108,7 @@ class _BoardListScreenState extends State<BoardListScreen> {
         builder: (_) => CreateThreadScreen(board: _selectedBoard),
       ),
     );
+
     if (result != null) {
       _fetchThreads();
     }
@@ -98,7 +117,7 @@ class _BoardListScreenState extends State<BoardListScreen> {
   @override
   Widget build(BuildContext context) {
     final bool isSmall = ResponsiveHelper.isSmallScreen(context);
-    final theme = Theme.of(context); // Get the theme for styling
+    final theme = Theme.of(context); // Get theme for styling
 
     return Scaffold(
       appBar: RetroHeader(
@@ -114,34 +133,113 @@ class _BoardListScreenState extends State<BoardListScreen> {
         showHome: false,
         showSearch: true,
       ),
-      // *** THE FIX: Use the theme's background color directly on the Scaffold. ***
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Stack(
         children: [
           Column(
             children: [
-              // *** THE FIX: The staff access banner now uses theme colors. ***
+              // *** THE FIX: Staff access panel is now themed ***
               Container(
                 width: double.infinity,
                 padding: ResponsiveHelper.getResponsivePadding(context, 16, 12),
-                color: theme.colorScheme.primary.withOpacity(0.05),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+                  border: Border(bottom: BorderSide(color: theme.dividerColor)),
+                ),
                 child: isSmall
                     ? Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildStaffAccessRow(isSmall, theme),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.security,
+                                size: 16,
+                                color: theme.colorScheme.onSurface.withOpacity(
+                                  0.7,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Staff Access:',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.onSurface
+                                      .withOpacity(0.7),
+                                ),
+                              ),
+                            ],
+                          ),
                           const SizedBox(height: 8),
-                          _buildModeratorLogin(isSmall, theme),
+                          SizedBox(
+                            width: double.infinity,
+                            child: retro.RetroButton(
+                              onTap: _openModeratorLogin,
+                              child: const Text('Moderator Login'),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            width: double.infinity,
+                            child: retro.RetroButton(
+                              onTap: _openCoordinatorForm,
+                              child: const Text('Co-ordinator Form'),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Demo: batman/ammar007',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurface.withOpacity(
+                                0.5,
+                              ),
+                            ),
+                          ),
                         ],
                       )
-                    : _buildModeratorLogin(isSmall, theme),
+                    : Row(
+                        children: [
+                          Icon(
+                            Icons.security,
+                            size: 20,
+                            color: theme.colorScheme.onSurface.withOpacity(0.7),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Staff Access:',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurface.withOpacity(
+                                0.7,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          retro.RetroButton(
+                            onTap: _openModeratorLogin,
+                            child: const Text('Moderator Login'),
+                          ),
+                          const SizedBox(width: 12),
+                          retro.RetroButton(
+                            onTap: _openCoordinatorForm,
+                            child: const Text('Co-ordinator Form'),
+                          ),
+                          const Spacer(),
+                          Text(
+                            'Demo: batman/ammar007',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurface.withOpacity(
+                                0.5,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
               ),
+              // *** THE FIX: Main content area with themed states ***
               Expanded(
                 child: _loading
                     ? const Center(child: CircularProgressIndicator())
                     : _error
                     ? Center(
-                        // *** THE FIX: Use theme font and color for error message. ***
                         child: Text(
                           "Failed to load threads",
                           style: theme.textTheme.titleMedium?.copyWith(
@@ -151,7 +249,6 @@ class _BoardListScreenState extends State<BoardListScreen> {
                       )
                     : _threads.isEmpty
                     ? Center(
-                        // *** THE FIX: Use theme font and color for empty message. ***
                         child: Text(
                           "No threads found on $_selectedBoard",
                           style: theme.textTheme.titleMedium?.copyWith(
@@ -161,10 +258,22 @@ class _BoardListScreenState extends State<BoardListScreen> {
                       )
                     : ListView.builder(
                         padding: EdgeInsets.fromLTRB(
-                          16,
-                          16,
-                          16,
-                          80, // Consistent padding
+                          ResponsiveHelper.getResponsivePadding(
+                            context,
+                            16,
+                            12,
+                          ).left,
+                          ResponsiveHelper.getResponsivePadding(
+                            context,
+                            16,
+                            12,
+                          ).top,
+                          ResponsiveHelper.getResponsivePadding(
+                            context,
+                            16,
+                            12,
+                          ).right,
+                          80, // Padding at the bottom for the floating button
                         ),
                         itemCount: _threads.length,
                         itemBuilder: (_, i) {
@@ -178,19 +287,24 @@ class _BoardListScreenState extends State<BoardListScreen> {
               ),
             ],
           ),
+          // *** THE FIX: Floating action button is now themed ***
           if (!_loading && !_error)
             Positioned(
               bottom: 16,
               left: 16,
               child: retro.RetroButton(
                 onTap: _createNewThread,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12.0,
-                    vertical: 8.0,
-                  ),
-                  // *** THE FIX: Text now correctly inherits font from button. ***
-                  child: Text('New Thread'),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 12.0,
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add, size: 18),
+                    SizedBox(width: 6),
+                    Text('New Thread'),
+                  ],
                 ),
               ),
             ),
@@ -198,80 +312,25 @@ class _BoardListScreenState extends State<BoardListScreen> {
       ),
     );
   }
-
-  // Helper widgets for cleanliness
-  Widget _buildStaffAccessRow(bool isSmall, ThemeData theme) {
-    return Row(
-      children: [
-        Icon(
-          Icons.security,
-          size: 16,
-          color: theme.colorScheme.onSurface.withOpacity(0.6),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          'Staff Access:',
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurface.withOpacity(0.8),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildModeratorLogin(bool isSmall, ThemeData theme) {
-    final moderatorButton = retro.RetroButton(
-      onTap: _openModeratorLogin,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      // *** THE FIX: Text now correctly inherits font from button. ***
-      child: Text('Moderator Login'),
-    );
-    final demoText = Text(
-      'Demo: batman/ammar007',
-      style: theme.textTheme.bodySmall?.copyWith(
-        color: theme.colorScheme.onSurface.withOpacity(0.5),
-      ),
-    );
-
-    if (isSmall) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(width: double.infinity, child: moderatorButton),
-          const SizedBox(height: 4),
-          demoText,
-        ],
-      );
-    } else {
-      return Row(
-        children: [
-          _buildStaffAccessRow(isSmall, theme),
-          const SizedBox(width: 12),
-          moderatorButton,
-          const Spacer(),
-          demoText,
-        ],
-      );
-    }
-  }
 }
 
 class ThreadListItem extends StatelessWidget {
   final Thread thread;
   final VoidCallback onTap;
+
   const ThreadListItem({super.key, required this.thread, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    // *** THE FIX: Use GestureDetector + RetroPanel for consistent styling. ***
-    return GestureDetector(
-      onTap: onTap,
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
       child: RetroPanel(
-        padding: EdgeInsets.zero, // Padding is handled internally
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 12),
+        padding: EdgeInsets.zero,
+        child: InkWell(
+          onTap: onTap,
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _threadImage(context),
               Expanded(child: _threadInfo(context)),
@@ -284,77 +343,91 @@ class ThreadListItem extends StatelessWidget {
 
   Widget _threadImage(BuildContext context) {
     final theme = Theme.of(context);
+
     if (thread.imagePath == null || thread.imagePath!.isEmpty) {
-      // *** THE FIX: Themed "NO IMG" placeholder. ***
       return Container(
         width: 80,
         height: 80,
-        color: theme.dividerColor.withOpacity(0.5),
+        color: theme.colorScheme.surfaceVariant,
         alignment: Alignment.center,
         child: Text(
           "NO IMG",
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurface.withOpacity(0.6),
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
       );
     }
-    return SizedBox(
+    return Container(
       width: 80,
       height: 80,
-      child: Image.network(
-        "http://127.0.0.1:3441/${thread.imagePath}",
-        fit: BoxFit.cover,
+      decoration: BoxDecoration(
+        border: Border.all(color: theme.dividerColor),
+        image: DecorationImage(
+          fit: BoxFit.cover,
+          image: NetworkImage("http://127.0.0.1:3441/${thread.imagePath}"),
+        ),
       ),
     );
   }
 
   Widget _threadInfo(BuildContext context) {
     final theme = Theme.of(context);
+
     return Padding(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _pill(context, thread.board), // Pass context to pill for theming
-          const SizedBox(height: 4),
-          // *** THE FIX: Use theme font for title. ***
+          _pill(context, thread.board),
+          const SizedBox(height: 6),
           Text(
             thread.title,
-            style: theme.textTheme.titleSmall?.copyWith(
+            style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 4),
-          // *** THE FIX: Use theme font for replies. ***
-          Text("${thread.replies} replies", style: theme.textTheme.bodySmall),
-          const SizedBox(height: 4),
-          if (thread.content.isNotEmpty)
-            Text(
-              thread.content,
-              style: theme.textTheme.bodyMedium,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+          Text(
+            "${thread.replies} replies",
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.7),
             ),
+          ),
+          if (thread.content.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            SizedBox(
+              height: 40,
+              child: SingleChildScrollView(
+                child: Text(
+                  thread.content,
+                  style: theme.textTheme.bodySmall,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 
-  // *** THE FIX: Pill widget is now themed correctly. ***
   Widget _pill(BuildContext context, String text) {
     final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: theme.dividerColor.withOpacity(0.5),
+        color: theme.colorScheme.primary.withOpacity(0.15),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.5)),
       ),
       child: Text(
         text,
         style: theme.textTheme.labelSmall?.copyWith(
+          color: theme.colorScheme.primary,
           fontWeight: FontWeight.bold,
         ),
       ),

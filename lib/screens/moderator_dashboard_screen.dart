@@ -5,21 +5,20 @@ import '../utils/responsive_helper.dart';
 import 'board_list_screen.dart';
 import 'moderator_thread_management_screen.dart';
 import 'moderator_report_screen.dart';
-import '../widgets/leopard_app_bar.dart'; // Use the themed AppBar
-import '../widgets/retro_panel.dart'; // Use the themed Panel
+import 'coordinator_list_screen.dart'; // Add this import
+import '../widgets/leopard_app_bar.dart';
+import '../widgets/retro_panel.dart';
 
 class ModeratorDashboardScreen extends StatelessWidget {
   const ModeratorDashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context); // Get theme for styling
+    final theme = Theme.of(context);
 
     return Scaffold(
-      // *** THE FIX: Use the themed LeopardAppBar and Scaffold background ***
       appBar: LeopardAppBar(
         title: const Text('Moderator Dashboard'),
-
         actions: [
           IconButton(
             onPressed: () {
@@ -39,15 +38,13 @@ class ModeratorDashboardScreen extends StatelessWidget {
         padding: ResponsiveHelper.getResponsivePadding(context, 16, 24),
         child: Column(
           children: [
-            // *** THE FIX: Welcome Header is now a themed RetroPanel ***
             RetroPanel(
               child: Column(
                 children: [
                   Icon(
                     Icons.admin_panel_settings,
                     size: ResponsiveHelper.isSmallScreen(context) ? 40 : 52,
-                    color:
-                        theme.colorScheme.primary, // Use theme's primary color
+                    color: theme.colorScheme.primary,
                   ),
                   SizedBox(
                     height: ResponsiveHelper.getResponsiveSpacing(context, 8),
@@ -74,8 +71,6 @@ class ModeratorDashboardScreen extends StatelessWidget {
             SizedBox(
               height: ResponsiveHelper.getResponsiveSpacing(context, 24),
             ),
-
-            // Action Buttons Grid - Responsive layout is preserved
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {
@@ -124,13 +119,17 @@ class ModeratorDashboardScreen extends StatelessWidget {
                           ),
                         ),
                       ),
+                      // Updated card for Coordinator List
                       _ModeratorActionCard(
-                        icon: Icons.people_outline,
-                        title: 'User Management',
-                        description: 'Manage user accounts',
-                        onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('User management coming soon!'),
+                        icon: Icons.badge_outlined, // Changed icon
+                        title: 'Co-ordinator List', // Changed title
+                        description:
+                            'View submitted coordinator forms', // Changed description
+                        onTap: () => Navigator.push(
+                          // Changed navigation
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const CoordinatorListScreen(),
                           ),
                         ),
                       ),
@@ -149,8 +148,6 @@ class ModeratorDashboardScreen extends StatelessWidget {
                 },
               ),
             ),
-
-            // Back to Home Button
             SizedBox(
               height: ResponsiveHelper.getResponsiveSpacing(context, 16),
             ),
@@ -162,7 +159,6 @@ class ModeratorDashboardScreen extends StatelessWidget {
                   (route) => false,
                 );
               },
-              // *** THE FIX: Text inherits its style from the button ***
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -196,7 +192,6 @@ class _ModeratorActionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // *** THE FIX: The card is now a themed RetroPanel ***
     return GestureDetector(
       onTap: onTap,
       child: RetroPanel(
@@ -211,7 +206,6 @@ class _ModeratorActionCard extends StatelessWidget {
             SizedBox(
               height: ResponsiveHelper.getResponsiveSpacing(context, 12),
             ),
-            // *** THE FIX: Text now uses themed styles ***
             Text(
               title,
               style: theme.textTheme.titleMedium?.copyWith(
