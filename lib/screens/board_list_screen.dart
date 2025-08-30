@@ -22,7 +22,7 @@ class BoardListScreen extends StatefulWidget {
 }
 
 class _BoardListScreenState extends State<BoardListScreen> {
-  static const String baseUrl = 'http://127.0.0.1:3441';
+  static const String baseUrl = 'http://192.168.1.12:3441';
   final List<Thread> _threads = [];
   bool _loading = false;
   bool _error = false;
@@ -361,7 +361,7 @@ class ThreadListItem extends StatelessWidget {
         border: Border.all(color: theme.dividerColor),
         image: DecorationImage(
           fit: BoxFit.cover,
-          image: NetworkImage("http://127.0.0.1:3441/${thread.imagePath}"),
+          image: NetworkImage("http://192.168.1.12:3441/${thread.imagePath}"),
         ),
       ),
     );

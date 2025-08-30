@@ -1,12 +1,13 @@
 // lib/screens/create_thread_screen.dart
-import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:io' show File; // Only import File, same as your thread_screen.dart
 import '../utils/responsive_helper.dart';
 import '../widgets/retro_button.dart' as retro;
-import '../widgets/leopard_app_bar.dart'; // Use the themed AppBar
+import '../widgets/leopard_app_bar.dart';
 
 class CreateThreadScreen extends StatefulWidget {
   final String board;
@@ -45,27 +46,35 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
     }
   }
 
+  // **FIXED: Use the exact same pattern as your working postReply() method**
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-
     setState(() => _submitting = true);
 
     try {
-      Uri uri = Uri.parse('http://127.0.0.1:3441/thread_create.php');
-      var request = http.MultipartRequest('POST', uri);
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse('http://192.168.1.12:3441/thread_create.php'),
+      );
+
       request.fields['title'] = _titleController.text.trim();
       request.fields['content'] = _contentController.text.trim();
       request.fields['board'] = widget.board;
 
+      // **FIXED: Use the exact same image handling as your replies**
       if (_selectedImage != null) {
-        request.files.add(
-          await http.MultipartFile.fromPath('image', _selectedImage!.path),
+        final imageBytes = await _selectedImage!.readAsBytes();
+        final multipartFile = http.MultipartFile.fromBytes(
+          'image',
+          imageBytes,
+          filename: _selectedImage!.name,
         );
+        request.files.add(multipartFile);
       }
 
-      var response = await request.send();
-      var responseBody = await response.stream.bytesToString();
-      var jsonResponse = json.decode(responseBody);
+      final response = await request.send();
+      final responseBody = await response.stream.bytesToString();
+      final jsonResponse = json.decode(responseBody);
 
       if (response.statusCode == 200 && jsonResponse['success'] == true) {
         if (mounted) {
@@ -75,7 +84,7 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
               backgroundColor: Colors.green,
             ),
           );
-          Navigator.of(context).pop(true); // Pop with a success indicator
+          Navigator.of(context).pop(true);
         }
       } else {
         throw Exception(jsonResponse['error'] ?? 'Failed to create thread.');
@@ -100,21 +109,58 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
     setState(() => _selectedImage = null);
   }
 
+  // **FIXED: Use the exact same image preview as your thread_screen.dart**
+  Widget _buildSelectedImagePreview() {
+    if (_selectedImage == null) return const SizedBox.shrink();
+
+    final bool isSmallScreen = ResponsiveHelper.isSmallScreen(context);
+
+    return Stack(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: kIsWeb
+              ? Image.network(
+                  _selectedImage!.path,
+                  height: isSmallScreen ? 150 : 250,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                )
+              : Image.file(
+                  File(_selectedImage!.path),
+                  height: isSmallScreen ? 150 : 250,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
+        ),
+        Positioned(
+          right: 8,
+          top: 8,
+          child: CircleAvatar(
+            radius: 16,
+            backgroundColor: Colors.black.withOpacity(0.6),
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              icon: const Icon(Icons.close, color: Colors.white, size: 18),
+              onPressed: _removeSelectedImage,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final bool isSmallScreen = ResponsiveHelper.isSmallScreen(context);
     return Scaffold(
-      // *** THE FIX: Use the themed LeopardAppBar ***
       appBar: LeopardAppBar(title: Text('Create Thread on ${widget.board}')),
       body: SingleChildScrollView(
         padding: ResponsiveHelper.getResponsivePadding(context, 24, 16),
         child: Form(
           key: _formKey,
           child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.stretch, // Ensure buttons stretch
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // *** THE FIX: Use the themed InputDecoration ***
               TextFormField(
                 controller: _titleController,
                 decoration: const InputDecoration(hintText: 'Title'),
@@ -133,37 +179,7 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
                 maxLength: 1000,
               ),
               const SizedBox(height: 20),
-              if (_selectedImage != null)
-                Stack(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.file(
-                        File(_selectedImage!.path),
-                        height: isSmallScreen ? 150 : 250,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                    Positioned(
-                      right: 8,
-                      top: 8,
-                      child: CircleAvatar(
-                        radius: 16,
-                        backgroundColor: Colors.black.withOpacity(0.6),
-                        child: IconButton(
-                          padding: EdgeInsets.zero,
-                          icon: const Icon(
-                            Icons.close,
-                            color: Colors.white,
-                            size: 18,
-                          ),
-                          onPressed: _removeSelectedImage,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+              _buildSelectedImagePreview(), // **FIXED: Use working image preview**
               const SizedBox(height: 16),
               retro.RetroButton(
                 onTap: _pickImage,
@@ -172,7 +188,6 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
                   children: [
                     const Icon(Icons.image_outlined),
                     const SizedBox(width: 8),
-                    // *** THE FIX: Text inherits font from button ***
                     Text(_selectedImage == null ? 'Add Image' : 'Change Image'),
                   ],
                 ),
@@ -189,7 +204,6 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
                           color: Colors.white,
                         ),
                       )
-                    // *** THE FIX: Text inherits font from button ***
                     : const Text('Create Thread'),
               ),
             ],

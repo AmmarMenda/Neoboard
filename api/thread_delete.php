@@ -2,8 +2,7 @@
 // api/thread_delete.php
 header("Content-Type: application/json");
 // Keep this header if you need it for a web-based admin panel
-header("Access-Control-Allow-Origin: http://127.0.0.1:5678"); 
-
+header("Access-Control-Allow-Origin: *");
 // Provides the $conn mysqli connection object
 require_once "db.php";
 
@@ -14,12 +13,15 @@ require_once "db.php";
 // Check if the ID is provided and is a valid number
 if (!isset($_POST["id"]) || !is_numeric($_POST["id"])) {
     http_response_code(400); // Bad Request
-    echo json_encode(["success" => false, "error" => "A valid thread ID is required."]);
+    echo json_encode([
+        "success" => false,
+        "error" => "A valid thread ID is required.",
+    ]);
     exit();
 }
 
 // Sanitize the ID as an integer
-$id = (int)$_POST["id"];
+$id = (int) $_POST["id"];
 
 // --- Database Deletion within a Transaction ---
 // A transaction ensures that both deletions succeed, or neither do.
@@ -31,7 +33,7 @@ try {
     $sql_replies = "DELETE FROM replies WHERE thread_id = ?";
     $stmt_replies = $conn->prepare($sql_replies);
     if (!$stmt_replies) {
-        throw new Exception('Failed to prepare replies deletion statement.');
+        throw new Exception("Failed to prepare replies deletion statement.");
     }
     $stmt_replies->bind_param("i", $id); // 'i' for integer
     $stmt_replies->execute();
@@ -41,14 +43,14 @@ try {
     $sql_thread = "DELETE FROM threads WHERE id = ?";
     $stmt_thread = $conn->prepare($sql_thread);
     if (!$stmt_thread) {
-        throw new Exception('Failed to prepare thread deletion statement.');
+        throw new Exception("Failed to prepare thread deletion statement.");
     }
     $stmt_thread->bind_param("i", $id);
     $stmt_thread->execute();
-    
+
     // Check if the thread was actually deleted (i.e., it existed)
     if ($stmt_thread->affected_rows === 0) {
-        throw new Exception('Thread not found or could not be deleted.');
+        throw new Exception("Thread not found or could not be deleted.");
     }
     $stmt_thread->close(); // Close the statement
 
@@ -57,14 +59,16 @@ try {
 
     // Send success response
     echo json_encode(["success" => true]);
-
 } catch (Exception $e) {
     // If any error occurred, roll back the entire transaction
     $conn->rollback();
-    
+
     // Send an error response
     http_response_code(500); // Internal Server Error
-    echo json_encode(["success" => false, "error" => "Database transaction failed: " . $e->getMessage()]);
+    echo json_encode([
+        "success" => false,
+        "error" => "Database transaction failed: " . $e->getMessage(),
+    ]);
 } finally {
     // --- Cleanup ---
     // Always close the connection

@@ -16,7 +16,7 @@ class ModeratorReportsScreen extends StatefulWidget {
 }
 
 class _ModeratorReportsScreenState extends State<ModeratorReportsScreen> {
-  static const String baseUrl = 'http://127.0.0.1:3441/';
+  static const String baseUrl = 'http://192.168.1.12:3441/';
   final List<String> statuses = ['all', 'pending', 'reviewed', 'dismissed'];
   String selectedStatus = 'pending';
   List<Report> reports = [];
@@ -223,7 +223,7 @@ class ReportCard extends StatelessWidget {
   final Report report;
   final Function(String) onStatusChange;
   final VoidCallback onDelete;
-  final String imageBaseUrl = 'http://127.0.0.1:3441';
+  final String imageBaseUrl = 'http://192.168.1.12.58:3441';
 
   const ReportCard({
     super.key,

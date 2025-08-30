@@ -1,7 +1,7 @@
 <?php
 // api/reply_delete.php
 header("Content-Type: application/json");
-
+header("Access-Control-Allow-Origin: *");
 // Provides the $conn mysqli connection object
 require_once "db.php";
 
@@ -12,12 +12,15 @@ require_once "db.php";
 // Check if the ID is provided and is a valid number
 if (!isset($_POST["id"]) || !is_numeric($_POST["id"])) {
     http_response_code(400); // Bad Request
-    echo json_encode(["success" => false, "error" => "A valid reply ID is required."]);
+    echo json_encode([
+        "success" => false,
+        "error" => "A valid reply ID is required.",
+    ]);
     exit();
 }
 
 // Sanitize the ID as an integer
-$id = (int)$_POST["id"];
+$id = (int) $_POST["id"];
 
 // --- Database Deletion ---
 try {
@@ -27,7 +30,7 @@ try {
 
     // Check if the statement preparation failed
     if (!$stmt) {
-        throw new Exception('Failed to prepare deletion statement.');
+        throw new Exception("Failed to prepare deletion statement.");
     }
 
     // Bind the integer ID to the statement
@@ -46,11 +49,13 @@ try {
         http_response_code(404); // Not Found
         echo json_encode(["success" => false, "error" => "Reply not found."]);
     }
-
 } catch (Exception $e) {
     // Handle any other exceptions during the process
     http_response_code(500); // Internal Server Error
-    echo json_encode(["success" => false, "error" => "Database operation failed: " . $e->getMessage()]);
+    echo json_encode([
+        "success" => false,
+        "error" => "Database operation failed: " . $e->getMessage(),
+    ]);
 } finally {
     // --- Cleanup ---
     // Make sure the statement and connection are closed if they were created
