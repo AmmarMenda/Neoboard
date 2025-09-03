@@ -23,7 +23,7 @@ class ThreadScreen extends StatefulWidget {
 
 class _ThreadScreenState extends State<ThreadScreen> {
   // --- State Variables ---
-  static const String baseUrl = 'http://192.168.1.12:3441/';
+  static const String baseUrl = 'http://0.0.0.0:3441/';
   final ImagePicker _picker = ImagePicker();
   Thread? thread;
   List<Post> replies = [];
@@ -178,7 +178,7 @@ class _ThreadScreenState extends State<ThreadScreen> {
         return ReportDialog(
           targetId: targetId,
           targetType: targetType,
-          baseUrl: 'http://192.168.1.12:3441/',
+          baseUrl: 'http://0.0.0.0:3441/',
         );
       },
     );

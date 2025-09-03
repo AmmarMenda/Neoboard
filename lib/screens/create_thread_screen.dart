@@ -54,7 +54,7 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
     try {
       final request = http.MultipartRequest(
         'POST',
-        Uri.parse('http://192.168.1.12:3441/thread_create.php'),
+        Uri.parse('http://0.0.0.0:3441/thread_create.php'),
       );
 
       request.fields['title'] = _titleController.text.trim();

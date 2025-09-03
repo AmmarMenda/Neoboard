@@ -23,7 +23,7 @@ class ModeratorThreadManagementScreen extends StatefulWidget {
 
 class _ModeratorThreadManagementScreenState
     extends State<ModeratorThreadManagementScreen> {
-  static const String baseUrl = 'http://192.168.1.12:3441/';
+  static const String baseUrl = 'http://0.0.0.0:3441/';
   final List<String> boards = ['All', '/b/', '/g/', '/v/', '/a/'];
   String selectedBoard = 'All';
   List<Thread> threads = [];
@@ -280,7 +280,7 @@ class _ModeratorThreadCardState extends State<ModeratorThreadCard> {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(4),
                       child: Image.network(
-                        'http://192.168.1.12:3441/${widget.thread.imagePath!}',
+                        'http://0.0.0.0:3441/${widget.thread.imagePath!}',
                         fit: BoxFit.cover,
                       ),
                     ),
