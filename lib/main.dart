@@ -1,7 +1,7 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
-import 'screens/board_list_screen.dart';
-import 'theme/leopard_theme.dart'; // Import your new theme file
+import 'screens/board_grid_screen.dart'; // Import your new screen
+import 'theme/leopard_theme.dart';
 
 void main() {
   runApp(const NeoBoardApp());
@@ -15,8 +15,8 @@ class NeoBoardApp extends StatelessWidget {
     return MaterialApp(
       title: 'NeoBoard',
       debugShowCheckedModeBanner: false,
-      theme: leopardTheme, // Apply the new theme here
-      home: const BoardListScreen(),
+      theme: leopardTheme,
+      home: const BoardGridScreen(), // Set the new screen as the home
     );
   }
 }

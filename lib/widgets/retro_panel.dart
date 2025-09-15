@@ -7,18 +7,15 @@ class RetroPanel extends StatelessWidget {
   final Widget child;
   final RetroPanelType type;
   final EdgeInsets padding;
-
   const RetroPanel({
     super.key,
     required this.child,
     this.type = RetroPanelType.raised,
     this.padding = const EdgeInsets.all(0),
   });
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface, // Should be white

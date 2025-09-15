@@ -7,6 +7,7 @@ class RetroHeader extends StatelessWidget implements PreferredSizeWidget {
   final String? selectedBoard;
   final ValueChanged<String>? onBoardTap;
   final ValueChanged<String>? onSearch;
+  final VoidCallback? onHome; // Add this line
   final bool showHome;
   final bool showSearch;
 
@@ -17,6 +18,7 @@ class RetroHeader extends StatelessWidget implements PreferredSizeWidget {
     this.selectedBoard,
     this.onBoardTap,
     this.onSearch,
+    this.onHome, // Add this line
     this.showHome = true,
     this.showSearch = true,
   });
@@ -27,7 +29,6 @@ class RetroHeader extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
     return Material(
       color: Colors.transparent,
       child: SafeArea(
@@ -54,17 +55,14 @@ class RetroHeader extends StatelessWidget implements PreferredSizeWidget {
                       width: 48,
                       child: IconButton(
                         icon: const Icon(Icons.arrow_back),
-                        onPressed: () => onBoardTap?.call('/'),
+                        onPressed:
+                            onHome, // Changed from onBoardTap?.call('/') to onHome
                       ),
                     ),
                   Expanded(
                     child: Text(
                       title,
                       textAlign: TextAlign.center,
-                      // *** THE FIX ***
-                      // This line is restored to prevent the widget from disappearing.
-                      // It explicitly applies styling from the theme, ensuring the
-                      // Text widget renders correctly.
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w600,
                         color: theme.appBarTheme.foregroundColor,
@@ -77,13 +75,15 @@ class RetroHeader extends StatelessWidget implements PreferredSizeWidget {
                       width: 48,
                       child: IconButton(
                         icon: const Icon(Icons.search),
-                        onPressed: () {},
+                        onPressed: () => _showSearchDialog(
+                          context,
+                        ), // Updated to call search dialog
                       ),
-                    ), // Placeholder action
+                    ),
                 ],
               ),
               const SizedBox(height: 8),
-              // Segmented Control for boards (This section is correct)
+              // Segmented Control for boards
               Container(
                 height: 32,
                 decoration: BoxDecoration(
@@ -136,8 +136,34 @@ class RetroHeader extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
-  // The dialog logic remains unchanged
+  // Add the search dialog functionality
   Future<void> _showSearchDialog(BuildContext context) async {
-    // ...
+    final controller = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Search'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(hintText: 'Enter search term...'),
+          autofocus: true,
+          onSubmitted: (value) => Navigator.pop(context, value),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, controller.text),
+            child: const Text('Search'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null && result.isNotEmpty) {
+      onSearch?.call(result);
+    }
   }
 }

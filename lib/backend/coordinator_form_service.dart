@@ -5,7 +5,7 @@ import 'package:image_picker/image_picker.dart';
 
 class CoordinatorFormService {
   // Replace with your actual server URL
-  static const String baseUrl = 'http://0.0.0.0'; // Update this!
+  static const String baseUrl = 'http://127.0.0.1'; // Update this!
   // For local XAMPP use: 'http://localhost/your-project'
   // For local network use: 'http://192.168.1.100/your-project'
 

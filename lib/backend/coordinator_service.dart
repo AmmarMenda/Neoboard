@@ -5,7 +5,7 @@ import '../models/coordinator_application.dart';
 
 class CoordinatorService {
   // Replace with your actual server URL
-  static const String baseUrl = 'http://0.0.0.0';
+  static const String baseUrl = 'http://127.0.0.1';
   static Future<List<CoordinatorApplication>>
   getCoordinatorApplications() async {
     try {

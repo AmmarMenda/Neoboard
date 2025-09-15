@@ -21,7 +21,7 @@ class ModeratorThreadViewScreen extends StatefulWidget {
 }
 
 class _ModeratorThreadViewScreenState extends State<ModeratorThreadViewScreen> {
-  static const String baseUrl = 'http://0.0.0.0:3441/';
+  static const String baseUrl = 'http://127.0.0.1:3441/';
   Thread? thread;
   List<Post> replies = [];
   bool loading = true;

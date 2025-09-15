@@ -13,16 +13,18 @@ import 'moderator_login_screen.dart';
 import 'thread_screen.dart';
 import 'create_thread_screen.dart';
 import 'coordinator_form_screen.dart';
+import 'board_grid_screen.dart'; // Add this import
 
 class BoardListScreen extends StatefulWidget {
-  const BoardListScreen({super.key});
+  final String? initialBoard; // Add this parameter
 
+  const BoardListScreen({super.key, this.initialBoard});
   @override
   State<BoardListScreen> createState() => _BoardListScreenState();
 }
 
 class _BoardListScreenState extends State<BoardListScreen> {
-  static const String baseUrl = 'http://0.0.0.0:3441';
+  static const String baseUrl = 'http://127.0.0.1:3441';
   final List<Thread> _threads = [];
   bool _loading = false;
   bool _error = false;
@@ -33,6 +35,9 @@ class _BoardListScreenState extends State<BoardListScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialBoard != null) {
+      _selectedBoard = widget.initialBoard!;
+    }
     _fetchThreads();
   }
 
@@ -128,7 +133,13 @@ class _BoardListScreenState extends State<BoardListScreen> {
             SnackBar(content: Text('Search not implemented yet. Query: $q')),
           );
         },
-        showHome: false,
+        onHome: () {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const BoardGridScreen()),
+          );
+        },
+        showHome: true, // Changed from false to true
         showSearch: true,
       ),
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -361,7 +372,7 @@ class ThreadListItem extends StatelessWidget {
         border: Border.all(color: theme.dividerColor),
         image: DecorationImage(
           fit: BoxFit.cover,
-          image: NetworkImage("http://0.0.0.0:3441/${thread.imagePath}"),
+          image: NetworkImage("http://127.0.0.1:3441/${thread.imagePath}"),
         ),
       ),
     );
